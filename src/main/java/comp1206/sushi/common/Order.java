@@ -2,6 +2,7 @@ package comp1206.sushi.common;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.Random;
 
 import comp1206.sushi.common.Order;
@@ -9,11 +10,13 @@ import comp1206.sushi.common.Order;
 public class Order extends Model {
 
 	private String status;
+	private Map<Dish, Number> orderDetails;
 	
-	public Order() {
+	public Order(String name, Map orderDetails) {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/YYYY HH:mm:ss");  
 		LocalDateTime now = LocalDateTime.now();  
-		this.name = dtf.format(now);
+		this.name = name;
+		this.orderDetails = orderDetails;
 	}
 
 	public Number getDistance() {
@@ -32,6 +35,18 @@ public class Order extends Model {
 	public void setStatus(String status) {
 		notifyUpdate("status",this.status,status);
 		this.status = status;
+	}
+
+	public void addDishToOrder(Dish d, Number n){
+		this.orderDetails.put(d,n);
+	}
+
+	public Map<Dish, Number> getOrderDetails() {
+		return orderDetails;
+	}
+
+	public void setOrderDetails(Map<Dish, Number> orderDetails) {
+		this.orderDetails = orderDetails;
 	}
 
 }

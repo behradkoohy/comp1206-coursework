@@ -90,19 +90,61 @@ public class Configuration {
                                     i = ingredient;
                                 }
                             }
-
-
+                            ingredientMap.put(i, Double.parseDouble(ingredientList[0]));
                         }
+                        server.addDish(splitString[1], splitString[2], Double.parseDouble(splitString[3]), Double.parseDouble(splitString[4]),
+                                Double.parseDouble(splitString[5]), ingredientMap);
                         break;
                     case "USER":
+                        Postcode userPostcode = null;
+                        for (Postcode p : server.getPostcodes()){
+                            if (p.getName().equalsIgnoreCase(splitString[4])){
+                                userPostcode = p;
+                            }
+                        }
+                        if (userPostcode == null){
+                            throw new Exception("Unsupported File Layout");
+                        } else {
+                            server.addUser(splitString[1], splitString[2], splitString[3], userPostcode);
+                        }
                         break;
                     case "ORDER":
+                        splitString[2].replace(" ", "");
+                        String[] orderList = splitString[2].split(",");
+                        HashMap<Dish, Number> orderBasket = new HashMap<>();
+                        for (String order : orderList){
+                            Dish orderedDish = null;
+                            for (Dish d : server.getDishes()){
+                                if (d.getName().equalsIgnoreCase(order.split("\\*")[0])){
+                                    orderedDish = d;
+                                }
+                            }
+                            if (orderedDish == null){
+                                throw new Exception("Unsupported File Layout");
+                            }else {
+                                orderBasket.put(orderedDish, Double.parseDouble(order.split("\\*")[1]));
+                            }
+                        }
+                        server.addOrder(new Order(splitString[1], orderBasket));
                         break;
                     case "STOCK":
-                        break;
+                        Dish dishStockModifer = null;
+                        for (Dish d : server.getDishes()){
+                            if (d.getName().equalsIgnoreCase(splitString[1])){
+                                dishStockModifer = d;
+                            }
+                        }
+                        if (dishStockModifer == null){
+                            throw new Exception("Unsupported file type");
+                        } else {
+                            dishStockModifer.setStock(Double.parseDouble(splitString[2]));
+                        }
+                        break; // TODO: FIGURE THIS STUFF OUT
                     case "STAFF":
+                        server.addStaff(splitString[1]);
                         break;
                     case "DRONE":
+                        server.addDrone(Double.parseDouble(splitString[1]));
                         break;
                 }
             }

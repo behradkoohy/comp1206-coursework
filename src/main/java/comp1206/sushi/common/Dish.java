@@ -15,6 +15,10 @@ public class Dish extends Model {
 	private Number restockThreshold;
 	private Number restockAmount;
 
+
+
+	private Number stock;
+
 	public Dish(String name, String description, Number price, Number restockThreshold, Number restockAmount) {
 		this.name = name;
 		this.description = description;
@@ -22,7 +26,10 @@ public class Dish extends Model {
 		this.restockThreshold = restockThreshold;
 		this.restockAmount = restockAmount;
 		this.recipe = new HashMap<Ingredient,Number>();
+		this.stock = 0;
 	}
+
+	public void addToStock(Number stock){this.stock = this.stock.doubleValue() + stock.doubleValue();}
 
 	public String getName() {
 		return name;
@@ -71,5 +78,9 @@ public class Dish extends Model {
 	public Number getRestockAmount() {
 		return this.restockAmount;
 	}
+
+	public Number getStock() {  return stock;  }
+
+	public void setStock(Number stock) {  this.stock = stock; }
 
 }

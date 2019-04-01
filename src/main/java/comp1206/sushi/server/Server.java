@@ -54,7 +54,7 @@ public class Server implements ServerInterface {
 		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
 		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
 		
-		orders.add(new Order());
+//		orders.add(new Order());
 
 		addIngredientToDish(dish1,ingredient1,1);
 		addIngredientToDish(dish1,ingredient2,2);
@@ -85,6 +85,19 @@ public class Server implements ServerInterface {
 
 	}
 
+	public Order addOrder(Order order){
+		this.orders.add(order);
+		return order;
+	}
+
+	public User addUser(String username, String password, String address, Postcode postcode){
+		User newUser = new User(username, password, address, postcode);
+		this.users.add(newUser);
+		this.notifyUpdate();
+		return newUser;
+	}
+
+
 	@Override
 	public List<Dish> getDishes() {
 		return this.dishes;
@@ -94,6 +107,14 @@ public class Server implements ServerInterface {
 	public Dish addDish(String name, String description, Number price, Number restockThreshold, Number restockAmount) {
 		Dish newDish = new Dish(name,description,price,restockThreshold,restockAmount);
 		this.dishes.add(newDish);
+		this.notifyUpdate();
+		return newDish;
+	}
+
+	public Dish addDish(String name, String description, Number price, Number restockThreshold, Number restockAmount, Map<Ingredient, Number> recipie) {
+		Dish newDish = new Dish(name,description,price,restockThreshold,restockAmount);
+		this.dishes.add(newDish);
+		newDish.setRecipe(recipie);
 		this.notifyUpdate();
 		return newDish;
 	}
