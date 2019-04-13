@@ -1,5 +1,6 @@
 package comp1206.sushi.common;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 

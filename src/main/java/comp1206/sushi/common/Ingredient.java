@@ -12,6 +12,8 @@ public class Ingredient extends Model {
 	private Number restockAmount;
 	private Number weight;
 
+	private Number stock;
+
 	public Ingredient(String name, String unit, Supplier supplier, Number restockThreshold,
 			Number restockAmount, Number weight) {
 		this.setName(name);
@@ -20,6 +22,7 @@ public class Ingredient extends Model {
 		this.setRestockThreshold(restockThreshold);
 		this.setRestockAmount(restockAmount);
 		this.setWeight(weight);
+		this.stock = 0;
 	}
 
 	public String getName() {
@@ -68,6 +71,14 @@ public class Ingredient extends Model {
 
 	public void setWeight(Number weight) {
 		this.weight = weight;
+	}
+
+	public Number getStock() {
+		return stock;
+	}
+
+	public void setStock(Number stock) {
+		this.stock = stock;
 	}
 
 }

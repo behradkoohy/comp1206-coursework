@@ -11,7 +11,8 @@ public class Order extends Model {
 
 	private String status;
 	private Map<Dish, Number> orderDetails;
-	
+	private boolean isOrderComplete = false;
+
 	public Order(String name, Map orderDetails) {
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/YYYY HH:mm:ss");  
 		LocalDateTime now = LocalDateTime.now();  
@@ -48,5 +49,9 @@ public class Order extends Model {
 	public void setOrderDetails(Map<Dish, Number> orderDetails) {
 		this.orderDetails = orderDetails;
 	}
+
+	public boolean isOrderComplete() {	return isOrderComplete;		}
+
+	public void setOrderComplete(boolean orderComplete) {	isOrderComplete = orderComplete;	}
 
 }

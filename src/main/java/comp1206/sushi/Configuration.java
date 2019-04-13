@@ -22,17 +22,16 @@ public class Configuration {
         try {
             Configuration c = new Configuration("/Users/behradkoohy/Desktop/prog2-cwk2-files/sushi/src/main/java/comp1206/sushi/Configuration.txt", new Server());
             c.setConfigurations();
-        } catch (Exception e){
+        } catch (IOException e){
             System.out.println(e.getStackTrace());
         }
     }
 
-    public void setConfigurations() throws Exception{
+    public void setConfigurations() throws IOException{
         server.resetServer();
         String st;
         while ((st = br.readLine()) != null){
             if (!(st.equals(""))){
-                System.out.println("Line:" + st);
                 String[] splitString = st.split(":");
                 switch (splitString[0]){
                     case "POSTCODE":
@@ -46,7 +45,7 @@ public class Configuration {
                             }
                         }
                         if (restaurantLocation == null){
-                            throw new Exception("Unsuppored File Layout");
+//                            throw new Exception("Unsuppored File Layout");
                         } else {
                             server.setRestaurant(new Restaurant(splitString[1], restaurantLocation));
                         }
@@ -59,7 +58,7 @@ public class Configuration {
                             }
                         }
                         if (supplierLocation == null){
-                            throw new Exception("Unsupported File Layout");
+//                            throw new Exception("Unsupported File Layout");
                         } else {
                             server.addSupplier(splitString[1], supplierLocation);
                         }
@@ -72,7 +71,7 @@ public class Configuration {
                             }
                         }
                         if (ingredientSupplier == null){
-                            throw new Exception("Unsupported File Layout");
+//                            throw new Exception("Unsupported File Layout");
                         } else {
                             server.addIngredient(splitString[1], splitString[2], ingredientSupplier, Double.parseDouble(splitString[4]),
                                     Double.parseDouble(splitString[5]), Double.parseDouble(splitString[6]));
@@ -86,12 +85,18 @@ public class Configuration {
                             String ingredientSplit[] = ingredientLine.split("\\*");
                             Ingredient i = null;
                             for (Ingredient ingredient : server.getIngredients()){
-                                if (ingredientSplit[1].equalsIgnoreCase(ingredient.getName())){
+                                ingredientSplit[1] = ingredientSplit[1].replace(" ", "");
+//                                System.out.println(ingredient + "*" + ingredientSplit[1]);
+                                if (ingredientSplit[1].equals(ingredient.getName()) || ingredient.getName().equals(ingredientSplit[1])){
                                     i = ingredient;
                                 }
                             }
-                            ingredientMap.put(i, Double.parseDouble(ingredientList[0]));
+//                            System.out.println(ingredientSplit[0]);
+//                            ingredientSplit[0].replace((i.getName()+" \\* "), "");
+                            ingredientMap.put(i, Double.parseDouble(ingredientSplit[0]));
                         }
+//                        System.out.println("DISH" + splitString[1] + splitString[2] + splitString[3] + splitString[4] +
+//                                splitString[5] + ingredientMap);
                         server.addDish(splitString[1], splitString[2], Double.parseDouble(splitString[3]), Double.parseDouble(splitString[4]),
                                 Double.parseDouble(splitString[5]), ingredientMap);
                         break;
@@ -103,7 +108,7 @@ public class Configuration {
                             }
                         }
                         if (userPostcode == null){
-                            throw new Exception("Unsupported File Layout");
+//                            throw new Exception("Unsupported File Layout");
                         } else {
                             server.addUser(splitString[1], splitString[2], splitString[3], userPostcode);
                         }
@@ -120,7 +125,7 @@ public class Configuration {
                                 }
                             }
                             if (orderedDish == null){
-                                throw new Exception("Unsupported File Layout");
+//                                throw new Exception("Unsupported File Layout");
                             }else {
                                 orderBasket.put(orderedDish, Double.parseDouble(order.split("\\*")[1]));
                             }
@@ -135,7 +140,18 @@ public class Configuration {
                             }
                         }
                         if (dishStockModifer == null){
-                            throw new Exception("Unsupported file type");
+//                            throw new Exception("Unsupported file type");
+                            Ingredient ingredientStockModifier = null;
+                            for (Ingredient i : server.getIngredients()){
+                                if (i.getName().equals(splitString[1])){
+                                    ingredientStockModifier = i;
+                                }
+                            }
+                            if (ingredientStockModifier == null){
+                                // pass
+                            } else {
+                                ingredientStockModifier.setStock(Double.parseDouble(splitString[2]));
+                            }
                         } else {
                             dishStockModifer.setStock(Double.parseDouble(splitString[2]));
                         }

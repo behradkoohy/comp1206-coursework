@@ -1,5 +1,6 @@
 package comp1206.sushi.server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,10 +10,14 @@ import java.util.Random;
 
 import javax.swing.JOptionPane;
 
+import comp1206.sushi.Configuration;
 import comp1206.sushi.common.*;
+
+
+import comp1206.sushi.exceptions.NegativeStockException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
- 
+
 public class Server implements ServerInterface {
 
     private static final Logger logger = LogManager.getLogger("Server");
@@ -29,50 +34,96 @@ public class Server implements ServerInterface {
 	public ArrayList<User> users = new ArrayList<User>();
 	public ArrayList<Postcode> postcodes = new ArrayList<Postcode>();
 	private ArrayList<UpdateListener> listeners = new ArrayList<UpdateListener>();
-	
+	public DishStockChecker dishStockChecker = new DishStockChecker(this);
+	public IngredientStockChecker ingredientStockChecker = new IngredientStockChecker(this);
+	public ArrayList<Thread> staffThreads = new ArrayList<>();
+
+	public DishStockDaemon dishStockDaemon = new DishStockDaemon(this);
+	Thread dishDaemon;
+
+	List<Dish> dishesBeingMade = new ArrayList<>();
+	public volatile boolean resetting = false;
+
+	Thread serverInput;
+
+
 	public Server() {
         logger.info("Starting up server...");
 		
 		Postcode restaurantPostcode = new Postcode("SO17 1BJ");
 		restaurant = new Restaurant("Mock Restaurant",restaurantPostcode);
+
+
+		dishDaemon = new Thread(dishStockDaemon);
+		dishDaemon.start();
+
 		
+		serverInput.start();
+
+
+//		serverInput = new Thread(serverComIn);
+//		serverInput.start();
+
+
 		Postcode postcode1 = addPostcode("SO17 1TJ");
 		Postcode postcode2 = addPostcode("SO17 1BX");
 		Postcode postcode3 = addPostcode("SO17 2NJ");
 		Postcode postcode4 = addPostcode("SO17 1TW");
 		Postcode postcode5 = addPostcode("SO17 2LB");
-		
-		Supplier supplier1 = addSupplier("Supplier 1",postcode1);
-		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
-		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
-		
-		Ingredient ingredient1 = addIngredient("Ingredient 1","grams",supplier1,1,5,1);
-		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
-		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
-		
-		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
-		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
-		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
-		
-//		orders.add(new Order());
+//
+//		Supplier supplier1 = addSupplier("Supplier 1",postcode1);
+//		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
+//		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
+//
+//		Ingredient ingredient1 = addIngredient("Ingredient 1","grams",supplier1,1,5,1);
+//		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
+//		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
+//
+//		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
+//		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
+//		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
+//
+////		orders.add(new Order());
+//
+//		addIngredientToDish(dish1,ingredient1,1);
+//		addIngredientToDish(dish1,ingredient2,2);
+//		addIngredientToDish(dish2,ingredient2,3);
+//		addIngredientToDish(dish2,ingredient3,1);
+//		addIngredientToDish(dish3,ingredient1,2);
+//		addIngredientToDish(dish3,ingredient3,1);
+//
+//		addStaff("Staff 1");
+//		addStaff("Staff 2");
+//		addStaff("Staff 3");
+//
+//		addDrone(1);
+//		addDrone(2);
+//		addDrone(3);
 
-		addIngredientToDish(dish1,ingredient1,1);
-		addIngredientToDish(dish1,ingredient2,2);
-		addIngredientToDish(dish2,ingredient2,3);
-		addIngredientToDish(dish2,ingredient3,1);
-		addIngredientToDish(dish3,ingredient1,2);
-		addIngredientToDish(dish3,ingredient3,1);
-		
-		addStaff("Staff 1");
-		addStaff("Staff 2");
-		addStaff("Staff 3");
-		
-		addDrone(1);
-		addDrone(2);
-		addDrone(3);
 	}
 
-	public void resetServer(){
+	public void addToDishesBeingMade(Dish dish){
+		dishesBeingMade.add(dish);
+	}
+
+	public void removeFromDishesBeingMade(Dish dish){
+		dishesBeingMade.remove(dish);
+	}
+
+
+	public synchronized List<Dish> checkDishStock(){
+		dishStockChecker.checkStockLevels();
+//		System.out.println("dishes needing replacement: " + dishStockChecker.getDishesToBeRestocked().size());
+		return dishStockChecker.getDishesToBeRestocked();
+	}
+
+
+	public synchronized void resetServer(){
+		resetting = true;
+		for (Staff s : staff){
+			s.terminate();
+		}
+		dishStockDaemon.resetSignal();
 		dishes = new ArrayList<Dish>();
 		drones = new ArrayList<Drone>();
 		ingredients = new ArrayList<Ingredient>();
@@ -82,7 +133,38 @@ public class Server implements ServerInterface {
 		users = new ArrayList<User>();
 		postcodes = new ArrayList<Postcode>();
 		listeners = new ArrayList<UpdateListener>();
+		staffThreads = new ArrayList<Thread>();
+		resetting = false;
+	}
 
+	public synchronized Map<Ingredient, Number> getDishIngredientStock(Dish dish){
+		Map<Ingredient, Number> oldStock = new HashMap<>();
+		for (Ingredient i : dish.getRecipe().keySet()){
+			if (i != null){
+				System.out.println(i);
+				oldStock.put(i, i.getStock());
+			}
+		}
+		return oldStock;
+	}
+
+	public boolean makeDish(Dish dish){
+		// returns true if dish is successful
+		// else false
+		Map<Ingredient,Number> previousStock = this.getDishIngredientStock(dish);
+		try{
+			for (Ingredient i: this.getRecipe(dish).keySet()){
+				reduceIngredientStock(i, this.getRecipe(dish).get(i));
+			}
+			dish.setStock(dish.getStock().doubleValue() + dish.getRestockAmount().intValue());
+			this.notifyUpdate();
+			return true;
+		} catch (Exception e){
+			for (Ingredient i: previousStock.keySet()){
+				this.setStock(i, previousStock.get(i));
+			}
+			return false;
+		}
 	}
 
 	public Order addOrder(Order order){
@@ -99,7 +181,7 @@ public class Server implements ServerInterface {
 
 
 	@Override
-	public List<Dish> getDishes() {
+	public synchronized List<Dish> getDishes() {
 		return this.dishes;
 	}
 
@@ -114,6 +196,7 @@ public class Server implements ServerInterface {
 	public Dish addDish(String name, String description, Number price, Number restockThreshold, Number restockAmount, Map<Ingredient, Number> recipie) {
 		Dish newDish = new Dish(name,description,price,restockThreshold,restockAmount);
 		this.dishes.add(newDish);
+		this.notifyUpdate();
 		newDish.setRecipe(recipie);
 		this.notifyUpdate();
 		return newDish;
@@ -138,12 +221,12 @@ public class Server implements ServerInterface {
 	
 	@Override
 	public void setRestockingIngredientsEnabled(boolean enabled) {
-		
+		/// TODO Implement
 	}
 
 	@Override
 	public void setRestockingDishesEnabled(boolean enabled) {
-		
+		/// TODO Implement
 	}
 	
 	@Override
@@ -175,6 +258,18 @@ public class Server implements ServerInterface {
 		int index = this.ingredients.indexOf(ingredient);
 		this.ingredients.remove(index);
 		this.notifyUpdate();
+	}
+
+	public void reduceIngredientStock(Ingredient ingredient, Number number) throws NegativeStockException {
+		System.out.println(ingredient.getStock());
+		System.out.println(number.doubleValue());
+		Number postStock = ingredient.getStock().doubleValue() - number.doubleValue();
+		if (postStock.intValue() >= 0){
+			ingredient.setStock(postStock);
+		} else {
+			throw new NegativeStockException("Negative number of stock");
+		}
+
 	}
 
 	@Override
@@ -223,8 +318,18 @@ public class Server implements ServerInterface {
 
 	@Override
 	public Staff addStaff(String name) {
-		Staff mock = new Staff(name);
-		this.staff.add(mock);
+		Staff mock = new Staff(name, this);
+		synchronized (this.staff){
+			this.staff.add(mock);
+			Thread t = new Thread(mock);
+			try{
+				Thread.sleep(50);
+			} catch (InterruptedException e){
+				System.out.println("addStaff Interrupt");
+			}
+			staffThreads.add(t);
+			t.start();
+		}
 		return mock;
 	}
 
@@ -331,7 +436,14 @@ public class Server implements ServerInterface {
 
 	@Override
 	public void loadConfiguration(String filename) {
-		System.out.println("Loaded configuration: " + filename);
+		try {
+			Configuration c = new Configuration(filename, this);
+			c.setConfigurations();
+			System.out.println("Loaded configuration: " + filename);
+			// TODO MAKE IT SO IT RESETS DAEMONS WHEN IT RELOADS
+		} catch (IOException e){
+			System.out.println(e.getCause());
+		}
 	}
 
 	@Override
