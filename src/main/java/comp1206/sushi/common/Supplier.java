@@ -13,6 +13,8 @@ public class Supplier extends Model {
 		this.postcode = postcode;
 	}
 
+	public Supplier(){}
+
 	public String getName() {
 		return name;
 	}

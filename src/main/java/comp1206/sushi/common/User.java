@@ -3,10 +3,11 @@ package comp1206.sushi.common;
 import comp1206.sushi.common.Postcode;
 import comp1206.sushi.common.User;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class User extends Model {
+public class User extends Model implements Serializable {
 	
 	private String name;
 
@@ -24,6 +25,7 @@ public class User extends Model {
 		this.postcode = postcode;
 		this.basket = new HashMap<>();
 	}
+	public User(){}
 
 	public String getName() {
 		return name;

@@ -276,7 +276,7 @@ public class ClientWindow extends JFrame implements UpdateListener {
 			//Get the total cost of the basket
 			Number cost = client.getBasketCost(user);
 			basketCost.setText(moneyFormat.format(cost));
-			
+//			basketCost.setText();
 			//If there's at least 1 item, enable checkout
 			if(basketItems.size() > 0) {
 				checkoutBasket.setEnabled(true);

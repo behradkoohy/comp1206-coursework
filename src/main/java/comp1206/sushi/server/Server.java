@@ -14,6 +14,7 @@ import comp1206.sushi.Configuration;
 import comp1206.sushi.common.*;
 
 
+import comp1206.sushi.comms.ServerComms;
 import comp1206.sushi.exceptions.NegativeStockException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,13 +44,14 @@ public class Server implements ServerInterface {
 
 	List<Dish> dishesBeingMade = new ArrayList<>();
 	public volatile boolean resetting = false;
+	ServerComms serverComms;
 
-	Thread serverInput;
 
 
 	public Server() {
-        logger.info("Starting up server...");
-		
+
+		logger.info("Starting up server...");
+
 		Postcode restaurantPostcode = new Postcode("SO17 1BJ");
 		restaurant = new Restaurant("Mock Restaurant",restaurantPostcode);
 
@@ -57,8 +59,6 @@ public class Server implements ServerInterface {
 		dishDaemon = new Thread(dishStockDaemon);
 		dishDaemon.start();
 
-		
-		serverInput.start();
 
 
 //		serverInput = new Thread(serverComIn);
@@ -70,20 +70,20 @@ public class Server implements ServerInterface {
 		Postcode postcode3 = addPostcode("SO17 2NJ");
 		Postcode postcode4 = addPostcode("SO17 1TW");
 		Postcode postcode5 = addPostcode("SO17 2LB");
-//
+////
 //		Supplier supplier1 = addSupplier("Supplier 1",postcode1);
 //		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
 //		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
-//
+
 //		Ingredient ingredient1 = addIngredient("Ingredient 1","grams",supplier1,1,5,1);
 //		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
 //		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
+
+		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
+		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
+		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
+		User user = addUser("a", "a", "a", postcode1);
 //
-//		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
-//		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
-//		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
-//
-////		orders.add(new Order());
 //
 //		addIngredientToDish(dish1,ingredient1,1);
 //		addIngredientToDish(dish1,ingredient2,2);
@@ -99,6 +99,8 @@ public class Server implements ServerInterface {
 //		addDrone(1);
 //		addDrone(2);
 //		addDrone(3);
+		serverComms = new ServerComms(this);
+
 
 	}
 
@@ -190,6 +192,12 @@ public class Server implements ServerInterface {
 		Dish newDish = new Dish(name,description,price,restockThreshold,restockAmount);
 		this.dishes.add(newDish);
 		this.notifyUpdate();
+		try{
+			serverComms.writeToFile();
+		} catch (NullPointerException e){
+//			Pass
+			System.out.println("NPE Caught");
+		}
 		return newDish;
 	}
 
@@ -199,6 +207,12 @@ public class Server implements ServerInterface {
 		this.notifyUpdate();
 		newDish.setRecipe(recipie);
 		this.notifyUpdate();
+		try{
+			serverComms.writeToFile();
+		} catch (NullPointerException e){
+//			Pass
+			System.out.println("NPE Caught");
+		}
 		return newDish;
 	}
 	
@@ -414,6 +428,12 @@ public class Server implements ServerInterface {
 		Postcode mock = new Postcode(code);
 		this.postcodes.add(mock);
 		this.notifyUpdate();
+		try{
+			serverComms.writeToFile();
+		} catch (NullPointerException e){
+//			Pass
+			System.out.println("NPE Caught");
+		}
 		return mock;
 	}
 
@@ -527,7 +547,7 @@ public class Server implements ServerInterface {
 	public void addUpdateListener(UpdateListener listener) {
 		this.listeners.add(listener);
 	}
-	
+
 	@Override
 	public void notifyUpdate() {
 		this.listeners.forEach(listener -> listener.updated(new UpdateEvent()));
@@ -566,5 +586,12 @@ public class Server implements ServerInterface {
 	public void setRestaurant(Restaurant restaurant) { this.restaurant = restaurant; }
 
 
+	/**
+	 *
+	 * **/
+	public static void main(String[] args) {
+		Server s = new Server();
+
+	}
 
 }

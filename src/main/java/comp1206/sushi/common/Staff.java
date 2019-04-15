@@ -4,6 +4,7 @@ import comp1206.sushi.server.Server;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Random;
 
 public class Staff extends Model implements Runnable {
 
@@ -113,7 +114,9 @@ public class Staff extends Model implements Runnable {
 					server.makeDish(topDish);
 					setStatus("Making dish " + beingMadeDish.getName());
 					try {
-						Thread.sleep(1000 * 5);
+						Random random = new Random();
+						int timeToMake = random.nextInt(41) + 20;
+						Thread.sleep(1000 * (timeToMake));
 					} catch (InterruptedException e){
 						System.out.println(e.getMessage());
 					}
