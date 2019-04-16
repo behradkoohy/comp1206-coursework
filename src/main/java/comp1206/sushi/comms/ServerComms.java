@@ -48,34 +48,39 @@ public class ServerComms {
         } catch (IOException e){
             e.printStackTrace();
         }
+
+        ServerMailboxDaemon serverMailboxDaemon = new ServerMailboxDaemon(this.server);
+        Thread serverMailboxReaderDaemon = new Thread(serverMailboxDaemon);
+        serverMailboxReaderDaemon.start();
     }
 
-    public synchronized void writeToFile(){
-        restaurant = server.getRestaurant();
-        dishes = server.getDishes();
-        orders = server.getOrders();
-        users = server.getUsers();
-        postcodes = server.getPostcodes();
-        System.out.println(postcodes);
+    public synchronized void writeToFile() {
+        if (!server.resetting) {
+            restaurant = server.getRestaurant();
+            dishes = server.getDishes();
+            orders = server.getOrders();
+            users = server.getUsers();
+            postcodes = server.getPostcodes();
+            System.out.println(postcodes);
 
-        this.server = server;
+            this.server = server;
 
-        List<List<? extends Model>> serverDetails = Arrays.asList(dishes, orders, users, postcodes);
+            List<List<? extends Model>> serverDetails = Arrays.asList(dishes, orders, users, postcodes);
 
 
-        try {
-            File file = new File(PATH_TO_FILE);
-            file.createNewFile();
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-            objectOutputStream.writeObject(serverDetails);
-            objectOutputStream.flush();
-            objectOutputStream.close();
-            System.out.println("Finished Writing");
-        } catch (IOException e){
-            e.printStackTrace();
+            try {
+                File file = new File(PATH_TO_FILE);
+                file.createNewFile();
+                FileOutputStream fileOutputStream = new FileOutputStream(file);
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+                objectOutputStream.writeObject(serverDetails);
+                objectOutputStream.flush();
+                objectOutputStream.close();
+                System.out.println("Finished Writing");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
-
 
 }

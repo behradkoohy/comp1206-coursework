@@ -4,10 +4,7 @@ import comp1206.sushi.client.Client;
 import comp1206.sushi.common.*;
 import comp1206.sushi.server.Server;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -18,7 +15,7 @@ public class ClientComms {
     Client client;
 
 
-
+    int uniqueFileCounter = 0;
     String serverSetupFileHash;
 
     Restaurant restaurant;
@@ -34,6 +31,7 @@ public class ClientComms {
     Server server;
 
     final String PATH_TO_FILE = "communication-files/serverstate";
+    final String PATH_TO_MAILBOX = "communication-files/mailbox";
 
     public ClientComms(Client client){
         this.client = client;
@@ -118,35 +116,40 @@ public class ClientComms {
         } catch (Exception e){
             e.printStackTrace();
         }
-        for (Object o : fileContents){
-            if (((ArrayList) o).size() > 0){
-                ArrayList<Object> dataColumn = (ArrayList) o;
-                if (dataColumn.get(0) instanceof Postcode){
-                    ArrayList<Postcode> newPostcodes = new ArrayList<>();
-                    for (Object obj : dataColumn){
-                        newPostcodes.add((Postcode) obj);
+        if (fileContents != null){
+            for (Object o : fileContents){
+                if (((ArrayList) o).size() > 0){
+                    ArrayList<Object> dataColumn = (ArrayList) o;
+                    if (dataColumn.get(0) instanceof Postcode){
+                        ArrayList<Postcode> newPostcodes = new ArrayList<>();
+                        for (Object obj : dataColumn){
+                            newPostcodes.add((Postcode) obj);
+                        }
+                        client.postcodes = newPostcodes;
+                        client.notifyUpdate();
+                    } else if (dataColumn.get(0) instanceof Dish){
+                        ArrayList<Dish> newDishes = new ArrayList<>();
+                        for (Object obj : dataColumn){
+                            newDishes.add((Dish) obj);
+                        }
+                        client.dishes = newDishes;
+                        client.notifyUpdate();
+                    } else if (dataColumn.get(0) instanceof Order){
+                        ArrayList<Order> newOrders = new ArrayList<>();
+                        for (Object obj : dataColumn){
+                            newOrders.add((Order) obj);
+                        }
+                        client.orders = newOrders;
+                        client.notifyUpdate();
+                    } else if (dataColumn.get(0) instanceof User){
+                        ArrayList<User> newUsers = new ArrayList<>();
+                        for (Object obj : dataColumn){
+                            newUsers.add((User) obj);
+                        }
+                        client.users = newUsers;
+                        client.notifyUpdate();
                     }
-                    client.postcodes = newPostcodes;
-                } else if (dataColumn.get(0) instanceof Dish){
-                    ArrayList<Dish> newDishes = new ArrayList<>();
-                    for (Object obj : dataColumn){
-                        newDishes.add((Dish) obj);
-                    }
-                    client.dishes = newDishes;
-                } else if (dataColumn.get(0) instanceof Order){
-                    ArrayList<Order> newOrders = new ArrayList<>();
-                    for (Object obj : dataColumn){
-                        newOrders.add((Order) obj);
-                    }
-                    client.orders = newOrders;
-                } else if (dataColumn.get(0) instanceof User){
-                    ArrayList<User> newUsers = new ArrayList<>();
-                    for (Object obj : dataColumn){
-                        newUsers.add((User) obj);
-                    }
-                    client.users = newUsers;
                 }
-
             }
         }
     }
@@ -204,4 +207,61 @@ public class ClientComms {
         this.serverSetupFileHash = serverSetupFileHash;
     }
 
+    public void sendMessage(User user){
+        File file = new File(PATH_TO_MAILBOX+File.separator+user.getName()+String.valueOf(uniqueFileCounter++));
+        try{
+            ArrayList<User> userToAdd = new ArrayList<>();
+            userToAdd.add(user);
+            file.getParentFile().mkdirs();
+            System.out.println(file.getAbsolutePath());
+            file.createNewFile();
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+            objectOutputStream.writeObject(userToAdd);
+            objectOutputStream.flush();
+            objectOutputStream.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public void sendMessage(Order order){
+        File file = new File(PATH_TO_MAILBOX+File.separator+order.getName()+String.valueOf(uniqueFileCounter++));
+        try{
+            ArrayList<Order> orderToAdd = new ArrayList<>();
+            orderToAdd.add(order);
+            file.getParentFile().mkdirs();
+            System.out.println(file.getAbsolutePath());
+            file.createNewFile();
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+            objectOutputStream.writeObject(orderToAdd);
+            objectOutputStream.flush();
+            objectOutputStream.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void sendMessage(CancelOrder cancelOrder){
+        File file = new File(PATH_TO_MAILBOX+File.separator+cancelOrder.getOrder().getName()+String.valueOf(uniqueFileCounter++));
+        try{
+            ArrayList<CancelOrder> orderToAdd = new ArrayList<>();
+            orderToAdd.add(cancelOrder);
+            System.out.println(cancelOrder.order.getName());
+            file.getParentFile().mkdirs();
+            System.out.println(file.getAbsolutePath());
+            file.createNewFile();
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+            objectOutputStream.writeObject(orderToAdd);
+            objectOutputStream.flush();
+            objectOutputStream.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
 }
+

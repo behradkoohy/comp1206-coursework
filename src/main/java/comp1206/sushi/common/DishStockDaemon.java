@@ -13,7 +13,6 @@ public class DishStockDaemon implements Runnable {
     Server server;
 
     Map<Dish, Number> dishStock;
-    List<Dish> dishesToBeRestocked;
     volatile ConcurrentLinkedQueue<Dish> dishRestockQueue = new ConcurrentLinkedQueue<>();
 
     public DishStockDaemon(Server server){
@@ -53,12 +52,11 @@ public class DishStockDaemon implements Runnable {
                         if (stockD < d.getRestockThreshold().intValue()){
                             for (int x = 0; x < d.getRestockThreshold().intValue() - stockD; x++){
                                 dishRestockQueue.add(d);
-                                System.out.println(d.getName());
+//                                System.out.println(d.getName());
                             }
                         }
                     }
                 }
-
             }
         }
     }

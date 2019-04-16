@@ -7,6 +7,7 @@ import java.util.Map;
 import comp1206.sushi.common.*;
 
 
+import comp1206.sushi.comms.CancelOrder;
 import comp1206.sushi.comms.ClientComms;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,13 +28,15 @@ public class Client implements ClientInterface {
 	// TODO: FINISH THE COMMS SECTION, GET ORDERS SENT TO THE SERVER ETC
 	// TODO: WE'RE NEARLY DONE, KEEP YOUR HEAD UP.
 
+	ClientComms clientComms;
 
 	public Client() {
 
 		logger.info("Starting up client...");
 
 		System.out.println("Setup");
-		ClientComms clientComms = new ClientComms(this);
+
+		clientComms = new ClientComms(this);
 		clientComms.initalFileRead();
 
 
@@ -71,11 +74,13 @@ public class Client implements ClientInterface {
 		User newUser = new User(username, password, address, postcode);
 		users.add(newUser);
 		currentlyLoggedInUser = newUser;
+		clientComms.sendMessage(newUser);
 		return newUser;
 	}
 
 	@Override
 	public User login(String username, String password) {
+		clientComms.mainstreamDataRead();
 		for (User u : users){
 			if (u.getName().equals(username) && u.getPassword().equals(password)){
 				currentlyLoggedInUser = u;
@@ -146,10 +151,12 @@ public class Client implements ClientInterface {
 		if (currentlyLoggedInUser != null){
 			Order newOrder = new Order(currentlyLoggedInUser.getName() , currentlyLoggedInUser.getBasket());
 			orders.add(newOrder);
+			clientComms.sendMessage(newOrder);
 			return newOrder;
 		} else {
 			Order newOrder = new Order(user.getName() , user.getBasket());
 			orders.add(newOrder);
+			clientComms.sendMessage(newOrder);
 			return newOrder;
 		}
 	}
@@ -194,6 +201,8 @@ public class Client implements ClientInterface {
 	@Override
 	public void cancelOrder(Order order) {
 		order.setStatus("Cancelled");
+		CancelOrder cancelOrder = new CancelOrder(order);
+		clientComms.sendMessage(cancelOrder);
 
 	}
 

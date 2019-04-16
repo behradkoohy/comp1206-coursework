@@ -19,7 +19,6 @@ public class ClientUpdaterDaemon implements Runnable {
         while (true){
             if (!serverFileCheckSum.equals(clientComms.getServerSetupFileHash())){
                 serverFileCheckSum = clientComms.getServerSetupFileHash();
-                System.out.println("RELOAD");
                 clientComms.mainstreamDataRead();
             }
         }

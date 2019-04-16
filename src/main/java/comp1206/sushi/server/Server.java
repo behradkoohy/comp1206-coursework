@@ -14,6 +14,7 @@ import comp1206.sushi.Configuration;
 import comp1206.sushi.common.*;
 
 
+import comp1206.sushi.comms.CancelOrder;
 import comp1206.sushi.comms.ServerComms;
 import comp1206.sushi.exceptions.NegativeStockException;
 import org.apache.logging.log4j.LogManager;
@@ -35,8 +36,6 @@ public class Server implements ServerInterface {
 	public ArrayList<User> users = new ArrayList<User>();
 	public ArrayList<Postcode> postcodes = new ArrayList<Postcode>();
 	private ArrayList<UpdateListener> listeners = new ArrayList<UpdateListener>();
-	public DishStockChecker dishStockChecker = new DishStockChecker(this);
-	public IngredientStockChecker ingredientStockChecker = new IngredientStockChecker(this);
 	public ArrayList<Thread> staffThreads = new ArrayList<>();
 
 	public DishStockDaemon dishStockDaemon = new DishStockDaemon(this);
@@ -113,12 +112,6 @@ public class Server implements ServerInterface {
 	}
 
 
-	public synchronized List<Dish> checkDishStock(){
-		dishStockChecker.checkStockLevels();
-//		System.out.println("dishes needing replacement: " + dishStockChecker.getDishesToBeRestocked().size());
-		return dishStockChecker.getDishesToBeRestocked();
-	}
-
 
 	public synchronized void resetServer(){
 		resetting = true;
@@ -148,6 +141,15 @@ public class Server implements ServerInterface {
 			}
 		}
 		return oldStock;
+	}
+
+	public void cancelOrder(CancelOrder cancelOrder){
+		for (Order o : this.getOrders()){
+			if (o.equals(cancelOrder.getOrder())){
+				o.setStatus("Cancelled");
+			}
+		}
+		notifyUpdate();
 	}
 
 	public boolean makeDish(Dish dish){
@@ -367,8 +369,11 @@ public class Server implements ServerInterface {
 	
 	@Override
 	public Number getOrderCost(Order order) {
-		Random random = new Random();
-		return random.nextInt(100);
+		Number totalCost = new Double(0);
+		for (Dish d : order.getOrderDetails().keySet()){
+			totalCost = totalCost.doubleValue() + (d.getPrice().doubleValue() * order.getOrderDetails().get(d).doubleValue());
+		}
+		return totalCost;
 	}
 
 	@Override
@@ -461,6 +466,7 @@ public class Server implements ServerInterface {
 			c.setConfigurations();
 			System.out.println("Loaded configuration: " + filename);
 			// TODO MAKE IT SO IT RESETS DAEMONS WHEN IT RELOADS
+			serverComms.writeToFile();
 		} catch (IOException e){
 			System.out.println(e.getCause());
 		}

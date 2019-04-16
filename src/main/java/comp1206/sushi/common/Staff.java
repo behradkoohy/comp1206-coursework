@@ -102,7 +102,12 @@ public class Staff extends Model implements Runnable {
 				}
 			}
 			if (topDish != null){
-				int numberToBe = this.server.getDishStockLevels().get(topDish).intValue();
+				int numberToBe;
+				try {
+					numberToBe = this.server.getDishStockLevels().get(topDish).intValue();
+				} catch (NullPointerException e){
+					continue;
+				}
 				for (Staff s : this.server.getStaff()){
 					if (s.getBeingMadeDish() != null && s.getBeingMadeDish().equals(topDish)){
 						System.out.println(s.getBeingMadeDish().getName() + " being made");
