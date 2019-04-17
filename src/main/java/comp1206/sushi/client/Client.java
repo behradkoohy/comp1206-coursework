@@ -7,8 +7,7 @@ import java.util.Map;
 import comp1206.sushi.common.*;
 
 
-import comp1206.sushi.comms.CancelOrder;
-import comp1206.sushi.comms.ClientComms;
+import comp1206.sushi.comms.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,26 +18,19 @@ public class Client implements ClientInterface {
 	public Restaurant restaurant;
 	public ArrayList<Dish> dishes = new ArrayList<Dish>();
 	public ArrayList<Order> orders = new ArrayList<Order>();
+
+
+
 	public ArrayList<User> users = new ArrayList<User>();
 	public ArrayList<Postcode> postcodes = new ArrayList<Postcode>();
 	private ArrayList<UpdateListener> listeners = new ArrayList<UpdateListener>();
 	public User currentlyLoggedInUser = null;
 
-	// TODO: ADD IN MAILBOX SYSTEM
-	// TODO: FINISH THE COMMS SECTION, GET ORDERS SENT TO THE SERVER ETC
-	// TODO: WE'RE NEARLY DONE, KEEP YOUR HEAD UP.
-
-	ClientComms clientComms;
+	ClientCommunications clientComms;
 
 	public Client() {
 
-		logger.info("Starting up client...");
-
-		System.out.println("Setup");
-
-		clientComms = new ClientComms(this);
-		clientComms.initalFileRead();
-
+		clientComms = new ClientCommunications(this);
 
 	}
 
@@ -80,8 +72,7 @@ public class Client implements ClientInterface {
 
 	@Override
 	public User login(String username, String password) {
-		clientComms.mainstreamDataRead();
-		for (User u : users){
+		for (User u : this.getUsers()){
 			if (u.getName().equals(username) && u.getPassword().equals(password)){
 				currentlyLoggedInUser = u;
 				return u;
@@ -92,12 +83,18 @@ public class Client implements ClientInterface {
 
 	@Override
 	public List<Postcode> getPostcodes() {
-
+		clientComms.sendMessage(new RequestPostcodes());
 		return postcodes;
 	}
 
 	@Override
 	public List<Dish> getDishes() {
+		clientComms.sendMessage(new RequestDishes());
+		try {
+			Thread.sleep(100);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		return dishes;
 	}
 
@@ -200,9 +197,9 @@ public class Client implements ClientInterface {
 
 	@Override
 	public void cancelOrder(Order order) {
+		clientComms.sendMessage(new CancelOrder(order));
 		order.setStatus("Cancelled");
-		CancelOrder cancelOrder = new CancelOrder(order);
-		clientComms.sendMessage(cancelOrder);
+
 
 	}
 
@@ -218,6 +215,36 @@ public class Client implements ClientInterface {
 		} catch (NullPointerException e){
 			System.out.println("notifyUpdate NPE caught");
 		}
+	}
+
+	public void setDishes(ArrayList<Dish> dishes) {
+		this.dishes = dishes;
+	}
+
+	public ArrayList<Order> getOrders() {
+		return orders;
+	}
+
+	public void setOrders(ArrayList<Order> orders) {
+		this.orders = orders;
+	}
+
+	public ArrayList<User> getUsers() {
+		clientComms.sendMessage(new RequestUsers());
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return users;
+	}
+
+	public void setUsers(ArrayList<User> users) {
+		this.users = users;
+	}
+
+	public void setPostcodes(ArrayList<Postcode> postcodes) {
+		this.postcodes = postcodes;
 	}
 
 

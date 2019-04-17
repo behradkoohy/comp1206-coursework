@@ -15,6 +15,9 @@ public class Drone extends Model {
 	private Postcode source;
 	private Postcode destination;
 
+	private Ingredient ingredientBeingDelivered;
+	private Dish dishBeingDelivered;
+
 	public Drone(Number speed) {
 		this.setSpeed(speed);
 		this.setCapacity(1);

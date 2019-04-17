@@ -2,16 +2,15 @@ package comp1206.sushi.comms;
 
 import comp1206.sushi.common.Order;
 
-import java.io.Serializable;
+public class CancelOrder {
 
-public class CancelOrder implements Serializable {
-    Order order;
+    public Order order;
+
+    public CancelOrder(){}
 
     public CancelOrder(Order order){
         this.order = order;
     }
-
-    public CancelOrder(){}
 
     public Order getOrder() {
         return order;

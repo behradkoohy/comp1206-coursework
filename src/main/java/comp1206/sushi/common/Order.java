@@ -19,7 +19,9 @@ public class Order extends Model implements Serializable {
 		LocalDateTime now = LocalDateTime.now();  
 		this.name = name;
 		this.orderDetails = orderDetails;
+		this.status = "In Progress";
 	}
+	public Order(){}
 
 	public Number getDistance() {
 		return 1;

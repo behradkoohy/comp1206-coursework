@@ -8,14 +8,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import javax.swing.JOptionPane;
-
 import comp1206.sushi.Configuration;
 import comp1206.sushi.common.*;
 
 
 import comp1206.sushi.comms.CancelOrder;
-import comp1206.sushi.comms.ServerComms;
+import comp1206.sushi.comms.ServerCommunications;
 import comp1206.sushi.exceptions.NegativeStockException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +41,10 @@ public class Server implements ServerInterface {
 
 	List<Dish> dishesBeingMade = new ArrayList<>();
 	public volatile boolean resetting = false;
-	ServerComms serverComms;
+
+//	ServerComms serverComms = new ServerComms(this);
+
+
 
 
 
@@ -58,7 +59,9 @@ public class Server implements ServerInterface {
 		dishDaemon = new Thread(dishStockDaemon);
 		dishDaemon.start();
 
+		ServerCommunications serverComms = new ServerCommunications(this);
 
+//		commsServer.start();
 
 //		serverInput = new Thread(serverComIn);
 //		serverInput.start();
@@ -98,7 +101,6 @@ public class Server implements ServerInterface {
 //		addDrone(1);
 //		addDrone(2);
 //		addDrone(3);
-		serverComms = new ServerComms(this);
 
 
 	}
@@ -145,7 +147,7 @@ public class Server implements ServerInterface {
 
 	public void cancelOrder(CancelOrder cancelOrder){
 		for (Order o : this.getOrders()){
-			if (o.equals(cancelOrder.getOrder())){
+			if (o.getName().equals(cancelOrder.getOrder().getName())){
 				o.setStatus("Cancelled");
 			}
 		}
@@ -194,12 +196,6 @@ public class Server implements ServerInterface {
 		Dish newDish = new Dish(name,description,price,restockThreshold,restockAmount);
 		this.dishes.add(newDish);
 		this.notifyUpdate();
-		try{
-			serverComms.writeToFile();
-		} catch (NullPointerException e){
-//			Pass
-			System.out.println("NPE Caught");
-		}
 		return newDish;
 	}
 
@@ -209,12 +205,6 @@ public class Server implements ServerInterface {
 		this.notifyUpdate();
 		newDish.setRecipe(recipie);
 		this.notifyUpdate();
-		try{
-			serverComms.writeToFile();
-		} catch (NullPointerException e){
-//			Pass
-			System.out.println("NPE Caught");
-		}
 		return newDish;
 	}
 	
@@ -433,12 +423,6 @@ public class Server implements ServerInterface {
 		Postcode mock = new Postcode(code);
 		this.postcodes.add(mock);
 		this.notifyUpdate();
-		try{
-			serverComms.writeToFile();
-		} catch (NullPointerException e){
-//			Pass
-			System.out.println("NPE Caught");
-		}
 		return mock;
 	}
 
@@ -465,8 +449,6 @@ public class Server implements ServerInterface {
 			Configuration c = new Configuration(filename, this);
 			c.setConfigurations();
 			System.out.println("Loaded configuration: " + filename);
-			// TODO MAKE IT SO IT RESETS DAEMONS WHEN IT RELOADS
-			serverComms.writeToFile();
 		} catch (IOException e){
 			System.out.println(e.getCause());
 		}
