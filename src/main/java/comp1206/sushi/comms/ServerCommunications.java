@@ -58,4 +58,11 @@ public class ServerCommunications {
             }
         });
     }
+
+    public void sendMessageToAll(ArrayList<Dish> dishes){
+        for (Connection c : this.kryonetServer.getConnections()){
+            c.sendTCP(server.getDishes());
+        }
+    }
+
 }

@@ -29,20 +29,22 @@ public class IngredientStockDaemon implements Runnable {
     }
 
     public synchronized void buildQueue(){
-        CopyOnWriteArrayList<Ingredient> ingredients = new CopyOnWriteArrayList<Ingredient>(this.server.getIngredients());
+        CopyOnWriteArrayList<Ingredient> ingredients = new CopyOnWriteArrayList<>(this.server.getIngredients());
         if (!server.resetting){
             Iterator<Ingredient> ingredientIterator = ingredients.iterator();
             while (ingredientIterator.hasNext()){
                 Ingredient i = ingredientIterator.next();
                 int accountedFor = 0;
-                if (this.server.getStaff() != null){
-                    synchronized (this.server.getStaff()){
+                if (this.server.getDrones() != null){
+                    synchronized (this.server.getDrones()){
                         // TODO: work out if drones are getting the ingredients already
-//                        for (Staff s: this.server.getStaff()){
-//                            if (!(s.getBeingMadeDish() == null) && s.getBeingMadeDish().equals(i)){
-//                                accountedFor += 1;
-//                            }
-//                        }
+                        for (Drone d : this.server.getDrones()){
+                            synchronized (d){
+                                if (d.getIngredientBeingDelivered() != null && d.getIngredientBeingDelivered().equals(i)){
+                                    accountedFor += 1;
+                                }
+                            }
+                        }
                         for (Ingredient ingredient : ingredientRestockQueue){
                             if (ingredient.equals(i)){
                                 accountedFor += 1;
@@ -59,8 +61,47 @@ public class IngredientStockDaemon implements Runnable {
             }
         }
     }
+
+//    public synchronized void buildQueue(){
+//        if (!server.resetting){
+//            CopyOnWriteArrayList<Ingredient> ingredients = new CopyOnWriteArrayList<>(server.getIngredients());
+//            Iterator<Ingredient> ingredientIterator = ingredients.iterator();
+//            while (ingredientIterator.hasNext()){
+//                Ingredient i = ingredientIterator.next();
+//                int stockDifference = 0;
+//                if (server.getDrones() != null) {
+//                    for (Drone d : server.getDrones()) {
+//                        if (d.getIngredientBeingDelivered() != null && d.getIngredientBeingDelivered().equals(i)) {
+//                            stockDifference += i.getRestockAmount().intValue();
+//                        }
+//                        for (Ingredient ingredientInQueue : ingredientRestockQueue) {
+//                            if (ingredientInQueue.equals(i)) {
+//                                stockDifference += i.getRestockAmount().intValue();
+//                            }
+//                        }
+//                        stockDifference += i.getStock().intValue();
+//                        System.out.println(stockDifference);
+//                        System.out.println(i.getRestockThreshold());
+//                        for (int n = stockDifference; stockDifference < i.getRestockThreshold().intValue(); ++n) {
+//                            ingredientRestockQueue.add(i);
+//                            System.out.println(stockDifference);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+    public synchronized Ingredient getTopOfQueue(){
+        return ingredientRestockQueue.remove();
+    }
+
     @Override
     public void run() {
-
+        while (!false) {
+            if (!server.resetting) {
+                buildQueue();
+            }
+        }
     }
 }

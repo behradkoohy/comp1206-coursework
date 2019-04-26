@@ -35,17 +35,16 @@ public class Server implements ServerInterface {
 	public ArrayList<Postcode> postcodes = new ArrayList<Postcode>();
 	private ArrayList<UpdateListener> listeners = new ArrayList<UpdateListener>();
 	public ArrayList<Thread> staffThreads = new ArrayList<>();
+	public ArrayList<Thread> droneThreads = new ArrayList<>();
 
 	public DishStockDaemon dishStockDaemon = new DishStockDaemon(this);
 	Thread dishDaemon;
 
+	public IngredientStockDaemon ingredientStockDaemon = new IngredientStockDaemon(this);
+	Thread ingredientDaemon;
+
 	List<Dish> dishesBeingMade = new ArrayList<>();
 	public volatile boolean resetting = false;
-
-//	ServerComms serverComms = new ServerComms(this);
-
-
-
 
 
 	public Server() {
@@ -59,6 +58,9 @@ public class Server implements ServerInterface {
 		dishDaemon = new Thread(dishStockDaemon);
 		dishDaemon.start();
 
+		ingredientDaemon = new Thread(ingredientStockDaemon);
+		ingredientDaemon.start();
+
 		ServerCommunications serverComms = new ServerCommunications(this);
 
 //		commsServer.start();
@@ -67,19 +69,19 @@ public class Server implements ServerInterface {
 //		serverInput.start();
 
 
-		Postcode postcode1 = addPostcode("SO17 1TJ");
-		Postcode postcode2 = addPostcode("SO17 1BX");
-		Postcode postcode3 = addPostcode("SO17 2NJ");
-		Postcode postcode4 = addPostcode("SO17 1TW");
-		Postcode postcode5 = addPostcode("SO17 2LB");
+		Postcode postcode1 = addPostcode("SO17 1TJ", this.restaurant);
+		Postcode postcode2 = addPostcode("SO17 1BX", this.restaurant);
+		Postcode postcode3 = addPostcode("SO17 2NJ", this.restaurant);
+		Postcode postcode4 = addPostcode("SO17 1TW", this.restaurant);
+		Postcode postcode5 = addPostcode("SO17 2LB", this.restaurant);
 ////
-//		Supplier supplier1 = addSupplier("Supplier 1",postcode1);
-//		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
-//		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
+		Supplier supplier1 = addSupplier("Supplier 1",postcode1);
+		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
+		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
 
-//		Ingredient ingredient1 = addIngredient("Ingredient 1","grams",supplier1,1,5,1);
-//		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
-//		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
+		Ingredient ingredient1 = addIngredient("Ingredient 1","grams",supplier1,1,5,1);
+		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
+		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
 
 		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
 		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
@@ -87,20 +89,20 @@ public class Server implements ServerInterface {
 		User user = addUser("a", "a", "a", postcode1);
 //
 //
-//		addIngredientToDish(dish1,ingredient1,1);
-//		addIngredientToDish(dish1,ingredient2,2);
-//		addIngredientToDish(dish2,ingredient2,3);
-//		addIngredientToDish(dish2,ingredient3,1);
-//		addIngredientToDish(dish3,ingredient1,2);
-//		addIngredientToDish(dish3,ingredient3,1);
+		addIngredientToDish(dish1,ingredient1,1);
+		addIngredientToDish(dish1,ingredient2,2);
+		addIngredientToDish(dish2,ingredient2,3);
+		addIngredientToDish(dish2,ingredient3,1);
+		addIngredientToDish(dish3,ingredient1,2);
+		addIngredientToDish(dish3,ingredient3,1);
 //
-//		addStaff("Staff 1");
-//		addStaff("Staff 2");
-//		addStaff("Staff 3");
+		addStaff("Staff 1");
+		addStaff("Staff 2");
+		addStaff("Staff 3");
 //
-//		addDrone(1);
-//		addDrone(2);
-//		addDrone(3);
+		addDrone(1);
+		addDrone(2);
+		addDrone(3);
 
 
 	}
@@ -171,6 +173,17 @@ public class Server implements ServerInterface {
 			}
 			return false;
 		}
+	}
+
+	public synchronized void deliverIngredients(Ingredient ingredient){
+		System.out.println("Call to deliver ingredients");
+		synchronized (ingredient){
+			int newStock = ingredient.getRestockAmount().intValue();
+			int oldStock = ingredient.getStock().intValue();
+			ingredient.setStock(newStock + oldStock);
+//			ingredient.setStock(this.getIngredientStockLevels().get(ingredient).intValue() + (1));
+		}
+
 	}
 
 	public Order addOrder(Order order){
@@ -305,8 +318,18 @@ public class Server implements ServerInterface {
 
 	@Override
 	public Drone addDrone(Number speed) {
-		Drone mock = new Drone(speed);
-		this.drones.add(mock);
+		Drone mock = new Drone(speed, this);
+		synchronized (this.drones){
+			this.drones.add(mock);
+			Thread t = new Thread(mock);
+			try{
+				Thread.sleep(50);
+			} catch (InterruptedException e){
+				System.out.println("addDrone Interrupt");
+			}
+			droneThreads.add(t);
+			t.start();
+		}
 		return mock;
 	}
 
@@ -420,7 +443,15 @@ public class Server implements ServerInterface {
 
 	@Override
 	public Postcode addPostcode(String code) {
-		Postcode mock = new Postcode(code);
+		Postcode mock = new Postcode(code, this.restaurant);
+		this.postcodes.add(mock);
+		this.notifyUpdate();
+		return mock;
+	}
+
+
+	public Postcode addPostcode(String code, Restaurant restaurant) {
+		Postcode mock = new Postcode(code, restaurant);
 		this.postcodes.add(mock);
 		this.notifyUpdate();
 		return mock;

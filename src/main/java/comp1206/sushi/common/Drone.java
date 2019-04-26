@@ -1,8 +1,9 @@
 package comp1206.sushi.common;
 
 import comp1206.sushi.common.Drone;
+import comp1206.sushi.server.Server;
 
-public class Drone extends Model {
+public class Drone extends Model implements Runnable{
 
 	private Number speed;
 	private Number progress;
@@ -15,13 +16,19 @@ public class Drone extends Model {
 	private Postcode source;
 	private Postcode destination;
 
-	private Ingredient ingredientBeingDelivered;
-	private Dish dishBeingDelivered;
+	private volatile boolean running = false;
+	Server server;
 
-	public Drone(Number speed) {
+
+
+	private volatile Ingredient ingredientBeingDelivered = null;
+	private volatile Dish dishBeingDelivered = null;
+
+	public Drone(Number speed, Server server) {
 		this.setSpeed(speed);
 		this.setCapacity(1);
 		this.setBattery(100);
+		this.server = server;
 	}
 
 	public Number getSpeed() {
@@ -86,5 +93,75 @@ public class Drone extends Model {
 		notifyUpdate("status",this.status,status);
 		this.status = status;
 	}
-	
+
+	public synchronized Ingredient getIngredientBeingDelivered() {
+		return ingredientBeingDelivered;
+	}
+
+	public synchronized void setIngredientBeingDelivered(Ingredient ingredientBeingDelivered) {
+		this.ingredientBeingDelivered = ingredientBeingDelivered;
+	}
+
+	public synchronized Dish getDishBeingDelivered() {
+		return dishBeingDelivered;
+	}
+
+	public synchronized void setDishBeingDelivered(Dish dishBeingDelivered) {
+		this.dishBeingDelivered = dishBeingDelivered;
+	}
+
+	@Override
+	public void run() {
+		System.out.println("Running thread for drone with speed " + getSpeed());
+		running = true;
+		while (running && !server.resetting){
+			Ingredient ingredientToGet = null;
+			synchronized (this.server.ingredientStockDaemon){
+				try {
+					ingredientToGet = this.server.ingredientStockDaemon.getTopOfQueue();
+				} catch (Exception e){
+					ingredientToGet = null;
+					ingredientBeingDelivered = null;
+				}
+			}
+			if (ingredientToGet != null){
+				int numberToBe;
+				try {
+					numberToBe = this.server.getIngredientStockLevels().get(ingredientToGet).intValue();
+				} catch (NullPointerException e){
+					continue;
+				}
+				for (Drone d : this.server.getDrones()){
+					if (d.getIngredientBeingDelivered() != null && d.getIngredientBeingDelivered().equals(ingredientToGet)) {
+						numberToBe += ingredientToGet.getRestockAmount().intValue();
+					}
+				}
+				if (numberToBe < ingredientToGet.getRestockThreshold().intValue()){
+					ingredientBeingDelivered = ingredientToGet;
+					System.out.println(ingredientToGet.getName() + " being made");
+					try{
+						Number distanceToTravel = ingredientToGet.getSupplier().getDistance().doubleValue() * 1000;
+						Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
+						for (int t = 0; t < timeToTravel.doubleValue(); t++){
+							Thread.sleep(1000);
+							double distanceGone = getSpeed().doubleValue() * t;
+							setProgress((distanceGone*100)/distanceToTravel.doubleValue());
+						}
+
+						server.deliverIngredients(ingredientToGet);
+					} catch (Exception e){
+						e.printStackTrace();
+					}
+					setIngredientBeingDelivered(null);
+					setDestination(null);
+					setProgress(0);
+				} else {
+					synchronized (this.server.ingredientStockDaemon.ingredientRestockQueue){
+						this.server.ingredientStockDaemon.ingredientRestockQueue.remove(ingredientToGet);
+					}
+				}
+			}
+		}
+
+	}
 }

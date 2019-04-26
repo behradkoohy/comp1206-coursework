@@ -93,30 +93,29 @@ public class Staff extends Model implements Runnable {
 		System.out.println("Running daemon thread " + name);
 		running = true;
 		while (running && !server.resetting){
-			Dish topDish = null;
+			Dish dishToMake = null;
 			synchronized (this.server.dishStockDaemon){
 				try{
-					topDish = this.server.dishStockDaemon.getTopOfQueue();
+					dishToMake = this.server.dishStockDaemon.getTopOfQueue();
 				} catch (NoSuchElementException e){
 					setStatus("Idle");
 				}
 			}
-			if (topDish != null){
+			if (dishToMake != null){
 				int numberToBe;
 				try {
-					numberToBe = this.server.getDishStockLevels().get(topDish).intValue();
+					numberToBe = this.server.getDishStockLevels().get(dishToMake).intValue();
 				} catch (NullPointerException e){
 					continue;
 				}
 				for (Staff s : this.server.getStaff()){
-					if (s.getBeingMadeDish() != null && s.getBeingMadeDish().equals(topDish)){
-						System.out.println(s.getBeingMadeDish().getName() + " being made");
-						numberToBe += topDish.getRestockAmount().intValue();
+					if (s.getBeingMadeDish() != null && s.getBeingMadeDish().equals(dishToMake)){
+						numberToBe += dishToMake.getRestockAmount().intValue();
 					}
 				}
-				if (numberToBe < topDish.getRestockThreshold().intValue()){
-					beingMadeDish = topDish;
-					server.makeDish(topDish);
+				if (numberToBe < dishToMake.getRestockThreshold().intValue()){
+					beingMadeDish = dishToMake;
+					server.makeDish(dishToMake);
 					setStatus("Making dish " + beingMadeDish.getName());
 					try {
 						Random random = new Random();
@@ -128,7 +127,7 @@ public class Staff extends Model implements Runnable {
 					setBeingMadeDish(null);
 				} else {
 					synchronized (this.server.dishStockDaemon.dishRestockQueue){
-						this.server.dishStockDaemon.dishRestockQueue.remove(topDish);
+						this.server.dishStockDaemon.dishRestockQueue.remove(dishToMake);
 					}
 				}
 			}

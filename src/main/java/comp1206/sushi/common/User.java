@@ -22,8 +22,13 @@ public class User extends Model implements Serializable {
 		this.name = username;
 		this.password = password;
 		this.address = address;
-		this.postcode = postcode;
+		if (postcode != null){
+			this.postcode = postcode;
+		} else {
+			this.postcode = new Postcode("SO17 1BJ");
+		}
 		this.basket = new HashMap<>();
+		//TODO: fix this if postcode is null
 	}
 	public User(){}
 
