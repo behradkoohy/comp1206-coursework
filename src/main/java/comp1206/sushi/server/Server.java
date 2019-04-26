@@ -46,8 +46,11 @@ public class Server implements ServerInterface {
 	List<Dish> dishesBeingMade = new ArrayList<>();
 	public volatile boolean resetting = false;
 
+	ServerCommunications serverComms;
+
 
 	public Server() {
+
 
 		logger.info("Starting up server...");
 
@@ -61,7 +64,7 @@ public class Server implements ServerInterface {
 		ingredientDaemon = new Thread(ingredientStockDaemon);
 		ingredientDaemon.start();
 
-		ServerCommunications serverComms = new ServerCommunications(this);
+		serverComms = new ServerCommunications(this);
 
 //		commsServer.start();
 
@@ -208,6 +211,7 @@ public class Server implements ServerInterface {
 	public Dish addDish(String name, String description, Number price, Number restockThreshold, Number restockAmount) {
 		Dish newDish = new Dish(name,description,price,restockThreshold,restockAmount);
 		this.dishes.add(newDish);
+		serverComms.sendMessageToAll(newDish);
 		this.notifyUpdate();
 		return newDish;
 	}

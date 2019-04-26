@@ -16,7 +16,7 @@ public class Client implements ClientInterface {
     private static final Logger logger = LogManager.getLogger("Client");
 
 	public Restaurant restaurant;
-	public ArrayList<Dish> dishes = new ArrayList<Dish>();
+	public volatile ArrayList<Dish> dishes = new ArrayList<Dish>();
 	public ArrayList<Order> orders = new ArrayList<Order>();
 
 
@@ -38,7 +38,9 @@ public class Client implements ClientInterface {
 		System.out.println("Adding dish : " + dish.getName());
 		dishes.add(dish);
 		System.out.println(dishes);
+		this.notifyUpdate();
 	}
+
 
 	public synchronized void addPostcode(Postcode postcode){
 		System.out.println("Adding postcode : " + postcode.getName());
@@ -77,8 +79,10 @@ public class Client implements ClientInterface {
 				currentlyLoggedInUser = u;
 				return u;
 			}
+
+
 		}
-		return null;
+		return new User();
 	}
 
 	@Override
@@ -215,10 +219,15 @@ public class Client implements ClientInterface {
 		} catch (NullPointerException e){
 			System.out.println("notifyUpdate NPE caught");
 		}
+
 	}
 
 	public void setDishes(ArrayList<Dish> dishes) {
+		System.out.println("setting dishes");
+
+
 		this.dishes = dishes;
+		this.notifyUpdate();
 	}
 
 	public ArrayList<Order> getOrders() {

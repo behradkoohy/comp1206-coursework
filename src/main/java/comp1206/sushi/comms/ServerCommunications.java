@@ -9,6 +9,7 @@ import comp1206.sushi.common.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class ServerCommunications {
@@ -59,9 +60,11 @@ public class ServerCommunications {
         });
     }
 
-    public void sendMessageToAll(ArrayList<Dish> dishes){
-        for (Connection c : this.kryonetServer.getConnections()){
-            c.sendTCP(server.getDishes());
+    public void sendMessageToAll(Dish dish){
+        System.out.println(dish);
+        System.out.println("SENDING DISHES");
+        if (kryonetServer.getConnections() != null && dish != null){
+            kryonetServer.sendToAllTCP(dish);
         }
     }
 

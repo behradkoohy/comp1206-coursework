@@ -116,9 +116,9 @@ public class Postcode extends Model implements Serializable {
 			websiteContents = websiteContents.replace("postcode:", "");
 			websiteContents = websiteContents.replace("lat:", "");
 			websiteContents = websiteContents.replace("long:", "");
-			System.out.println(websiteContents);
-			System.out.println(Double.parseDouble(websiteContents.split(",")[1]));
-			System.out.println(Double.parseDouble(websiteContents.split(",")[2]));
+//			System.out.println(websiteContents);
+//			System.out.println(Double.parseDouble(websiteContents.split(",")[1]));
+//			System.out.println(Double.parseDouble(websiteContents.split(",")[2]));
 			latLong.put("lat", Double.parseDouble(websiteContents.split(",")[1]));
 			latLong.put("lon", Double.parseDouble(websiteContents.split(",")[2]));
 		} else {
