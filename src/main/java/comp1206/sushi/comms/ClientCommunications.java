@@ -32,6 +32,8 @@ public class ClientCommunications {
         kryo.register(RequestDishes.class);
         kryo.register(Order.class);
         kryo.register(CancelOrder.class);
+        kryo.register(RemoveDish.class);
+        kryo.register(ResetServer.class);
 
         try {
             kryonetClient.connect(5000, "127.0.0.1", 54555, 54777);
@@ -56,6 +58,12 @@ public class ClientCommunications {
                 if (object instanceof Dish) {
                     client.addDish((Dish)(object));
                 }
+                if (object instanceof RemoveDish){
+                    client.removeDish(((RemoveDish) object).getDish());
+                }
+                if (object instanceof ResetServer){
+                    client.resetServerSignal();
+                }
             }
         });
     }
@@ -65,21 +73,21 @@ public class ClientCommunications {
     }
 
     public void recieveMessage(){
-//        kryonetClient.addListener(new Listener() {
-//            public void received (Connection connection, Object object) {
-//                if (object instanceof List) {
-//                    if (((ArrayList) object).size() > 0){
-//                        ArrayList recievedList = (ArrayList) object;
-//                        if (recievedList.get(0) instanceof User){
-//                            client.users = recievedList;
-//                        } else if (recievedList.get(0) instanceof Postcode){
-//                            client.postcodes = recievedList;
-//                        } else if (recievedList.get(0) instanceof Dish){
-//                            client.dishes = recievedList;
-//                        }
-//                    }
-//                }
-//            }
-//        });
+        kryonetClient.addListener(new Listener() {
+            public void received (Connection connection, Object object) {
+                if (object instanceof List) {
+                    if (((ArrayList) object).size() > 0){
+                        ArrayList recievedList = (ArrayList) object;
+                        if (recievedList.get(0) instanceof User){
+                            client.users = recievedList;
+                        } else if (recievedList.get(0) instanceof Postcode){
+                            client.postcodes = recievedList;
+                        } else if (recievedList.get(0) instanceof Dish){
+                            client.dishes = recievedList;
+                        }
+                    }
+                }
+            }
+        });
     }
 }

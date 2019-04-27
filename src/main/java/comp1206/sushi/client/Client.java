@@ -1,6 +1,7 @@
 package comp1206.sushi.client;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +35,16 @@ public class Client implements ClientInterface {
 
 	}
 
+	public void resetServerSignal(){
+		dishes = new ArrayList<Dish>();
+//		orders = new ArrayList<Order>();
+		users = new ArrayList<User>();
+		postcodes = new ArrayList<Postcode>();
+		clientComms.sendMessage(new RequestDishes());
+		clientComms.sendMessage(new RequestPostcodes());
+		clientComms.sendMessage(new RequestUsers());
+	}
+
 	public void addDish(Dish dish){
 		System.out.println("Adding dish : " + dish.getName());
 		dishes.add(dish);
@@ -41,11 +52,21 @@ public class Client implements ClientInterface {
 		this.notifyUpdate();
 	}
 
+	public void removeDish(Dish dish){
+		Iterator<Dish> dishIterator = this.dishes.iterator();
+		while (dishIterator.hasNext()){
+			Dish d = dishIterator.next();
+			if (d.getName().equals(dish.getName())){
+				dishIterator.remove();
+			}
+		}
+		this.notifyUpdate();
+	}
 
 	public synchronized void addPostcode(Postcode postcode){
 		System.out.println("Adding postcode : " + postcode.getName());
 		postcodes.add(postcode);
-//		notifyUpdate();
+		this.notifyUpdate();
 	}
 
 	@Override
@@ -150,12 +171,12 @@ public class Client implements ClientInterface {
 	public Order checkoutBasket(User user) {
 		// TODO Auto-generated method stub
 		if (currentlyLoggedInUser != null){
-			Order newOrder = new Order(currentlyLoggedInUser.getName() , currentlyLoggedInUser.getBasket());
+			Order newOrder = new Order(currentlyLoggedInUser.getName() , currentlyLoggedInUser.getBasket(), currentlyLoggedInUser);
 			orders.add(newOrder);
 			clientComms.sendMessage(newOrder);
 			return newOrder;
 		} else {
-			Order newOrder = new Order(user.getName() , user.getBasket());
+			Order newOrder = new Order(user.getName() , user.getBasket(), user);
 			orders.add(newOrder);
 			clientComms.sendMessage(newOrder);
 			return newOrder;

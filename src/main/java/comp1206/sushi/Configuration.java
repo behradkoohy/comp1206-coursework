@@ -130,7 +130,13 @@ public class Configuration {
                                 orderBasket.put(orderedDish, Double.parseDouble(order.split("\\*")[1]));
                             }
                         }
-                        server.addOrder(new Order(splitString[1], orderBasket));
+                        User orderedUser = null;
+                        for (User u : server.getUsers()){
+                            if (u.getName().equals(splitString[1])){
+                                orderedUser = u;
+                            }
+                        }
+                        server.addOrder(new Order(splitString[1], orderBasket, orderedUser));
                         break;
                     case "STOCK":
                         Dish dishStockModifer = null;

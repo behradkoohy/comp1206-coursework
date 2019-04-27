@@ -33,6 +33,8 @@ public class ServerCommunications {
         kryo.register(RequestDishes.class);
         kryo.register(Order.class);
         kryo.register(CancelOrder.class);
+        kryo.register(RemoveDish.class);
+        kryo.register(ResetServer.class);
 
         try {
             kryonetServer.bind(54555,54777);
@@ -65,6 +67,18 @@ public class ServerCommunications {
         System.out.println("SENDING DISHES");
         if (kryonetServer.getConnections() != null && dish != null){
             kryonetServer.sendToAllTCP(dish);
+        }
+    }
+
+    public void sendMessageToAdd(RemoveDish removeDish){
+        if (kryonetServer.getConnections() != null && removeDish != null){
+            kryonetServer.sendToAllTCP(removeDish);
+        }
+    }
+
+    public void sendMessageToAdd(ResetServer resetServer){
+        if (kryonetServer.getConnections() != null && resetServer != null){
+            kryonetServer.sendToAllTCP(resetServer);
         }
     }
 

@@ -7,12 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import comp1206.sushi.Configuration;
 import comp1206.sushi.common.*;
 
 
 import comp1206.sushi.comms.CancelOrder;
+import comp1206.sushi.comms.RemoveDish;
 import comp1206.sushi.comms.ServerCommunications;
 import comp1206.sushi.exceptions.NegativeStockException;
 import org.apache.logging.log4j.LogManager;
@@ -26,7 +28,7 @@ public class Server implements ServerInterface {
 
 	public Restaurant restaurant;
 	public ArrayList<Dish> dishes = new ArrayList<Dish>();
-	public ArrayList<Drone> drones = new ArrayList<Drone>();
+	public CopyOnWriteArrayList<Drone> drones = new CopyOnWriteArrayList<Drone>();
 	public ArrayList<Ingredient> ingredients = new ArrayList<Ingredient>();
 	public ArrayList<Order> orders = new ArrayList<Order>();
 	public ArrayList<Staff> staff = new ArrayList<Staff>();
@@ -47,6 +49,8 @@ public class Server implements ServerInterface {
 	public volatile boolean resetting = false;
 
 	ServerCommunications serverComms;
+
+	public DeliveryQueue deliveryQueue = new DeliveryQueue();
 
 
 	public Server() {
@@ -125,9 +129,13 @@ public class Server implements ServerInterface {
 		for (Staff s : staff){
 			s.terminate();
 		}
+		for (Drone d : drones){
+			d.terminate();
+		}
 		dishStockDaemon.resetSignal();
+		ingredientStockDaemon.resetSignal();
 		dishes = new ArrayList<Dish>();
-		drones = new ArrayList<Drone>();
+		drones = new CopyOnWriteArrayList<Drone>();
 		ingredients = new ArrayList<Ingredient>();
 		orders = new ArrayList<Order>();
 		staff = new ArrayList<Staff>();
@@ -136,6 +144,7 @@ public class Server implements ServerInterface {
 		postcodes = new ArrayList<Postcode>();
 		listeners = new ArrayList<UpdateListener>();
 		staffThreads = new ArrayList<Thread>();
+		deliveryQueue = new DeliveryQueue();
 		resetting = false;
 	}
 
@@ -154,6 +163,7 @@ public class Server implements ServerInterface {
 		for (Order o : this.getOrders()){
 			if (o.getName().equals(cancelOrder.getOrder().getName())){
 				o.setStatus("Cancelled");
+				deliveryQueue.cancelOrder(o);
 			}
 		}
 		notifyUpdate();
@@ -178,6 +188,15 @@ public class Server implements ServerInterface {
 		}
 	}
 
+	public synchronized void deliverOrder(Order order){
+		System.out.println("Call to deliver order");
+		for (Order o : this.getOrders()){
+			if (o.getOrderDetails().equals(order.getOrderDetails()) && o.getName().equals(order.getName())){
+				o.setStatus("Completed");
+			}
+		}
+	}
+
 	public synchronized void deliverIngredients(Ingredient ingredient){
 		System.out.println("Call to deliver ingredients");
 		synchronized (ingredient){
@@ -191,6 +210,7 @@ public class Server implements ServerInterface {
 
 	public Order addOrder(Order order){
 		this.orders.add(order);
+		deliveryQueue.addToQueue(order);
 		return order;
 	}
 
@@ -228,6 +248,7 @@ public class Server implements ServerInterface {
 	@Override
 	public void removeDish(Dish dish) {
 		this.dishes.remove(dish);
+		serverComms.sendMessageToAdd(new RemoveDish(dish));
 		this.notifyUpdate();
 	}
 
@@ -487,6 +508,7 @@ public class Server implements ServerInterface {
 		} catch (IOException e){
 			System.out.println(e.getCause());
 		}
+
 	}
 
 	@Override

@@ -22,7 +22,10 @@ public class Drone extends Model implements Runnable{
 
 
 	private volatile Ingredient ingredientBeingDelivered = null;
-	private volatile Dish dishBeingDelivered = null;
+
+
+
+	private volatile Order orderBeingDelivered = null;
 
 	public Drone(Number speed, Server server) {
 		this.setSpeed(speed);
@@ -94,6 +97,10 @@ public class Drone extends Model implements Runnable{
 		this.status = status;
 	}
 
+	public void terminate(){
+		running = false;
+	}
+
 	public synchronized Ingredient getIngredientBeingDelivered() {
 		return ingredientBeingDelivered;
 	}
@@ -102,13 +109,15 @@ public class Drone extends Model implements Runnable{
 		this.ingredientBeingDelivered = ingredientBeingDelivered;
 	}
 
-	public synchronized Dish getDishBeingDelivered() {
-		return dishBeingDelivered;
+	public Order getOrderBeingDelivered() {
+		return orderBeingDelivered;
 	}
 
-	public synchronized void setDishBeingDelivered(Dish dishBeingDelivered) {
-		this.dishBeingDelivered = dishBeingDelivered;
+	public void setOrderBeingDelivered(Order orderBeingDelivered) {
+		this.orderBeingDelivered = orderBeingDelivered;
 	}
+
+
 
 	@Override
 	public void run() {
@@ -162,6 +171,24 @@ public class Drone extends Model implements Runnable{
 				}
 			}
 		}
+		if (this.server.ingredientStockDaemon.getQueueSize() == 0 && this.server.deliveryQueue.peekDeliverable() != null && this.getIngredientBeingDelivered() == null && this.getOrderBeingDelivered() == null){
+			Order toDeliver = this.server.deliveryQueue.getDeliverable();
+			try{
+				Number distanceToTravel = toDeliver.getUser().getPostcode().getDistance().doubleValue() * 1000;
+				Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
+				for (int t = 0; t < timeToTravel.doubleValue(); t++){
+					Thread.sleep(1000);
+					double distanceGone = getSpeed().doubleValue() * t;
+					setProgress((distanceGone*100)/distanceToTravel.doubleValue());
+				}
 
+				server.deliverOrder(toDeliver);
+			} catch (Exception e){
+				e.printStackTrace();
+			}
+			setIngredientBeingDelivered(null);
+			setDestination(null);
+			setProgress(0);
+		}
 	}
 }

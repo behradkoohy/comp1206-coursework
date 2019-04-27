@@ -14,15 +14,18 @@ public class Order extends Model implements Serializable {
 	private Map<Dish, Number> orderDetails;
 	private boolean isOrderComplete = false;
 
-	public Order(String name, Map orderDetails) {
-		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/YYYY HH:mm:ss");  
-		LocalDateTime now = LocalDateTime.now();  
+	private User user;
+
+	public Order(String name, Map orderDetails, User user) {
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/YYYY HH:mm:ss");
+		LocalDateTime now = LocalDateTime.now();
 		this.name = name;
 		this.orderDetails = orderDetails;
 		this.status = "In Progress";
+		this.user = user;
 	}
-	public Order(){}
 
+	public Order(){}
 	public Number getDistance() {
 		return 1;
 	}
@@ -39,6 +42,14 @@ public class Order extends Model implements Serializable {
 	public void setStatus(String status) {
 		notifyUpdate("status",this.status,status);
 		this.status = status;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
 	}
 
 	public void addDishToOrder(Dish d, Number n){
