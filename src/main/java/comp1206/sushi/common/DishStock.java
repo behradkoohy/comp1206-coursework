@@ -58,4 +58,10 @@ public class DishStock {
         return (this.dishesToBeMade.size() == 0);
     }
 
+    public void forceUpdate(){
+        for (Ingredient i : this.server.getIngredients()){
+
+        }
+    }
+
 }

@@ -194,8 +194,16 @@ public class Server implements ServerInterface {
 //		}
 //	}
 
+	// TODO: Implement this
 	public void makeDish(Dish dish){
+		// CHECK IF ENOUGH STOCK EXISTS BEFORE CALLING THIS FUNCTION
 		Map<Ingredient, Number> previousStock = this.getDishIngredientStock(dish);
+		synchronized (this.ingredients){
+			for (Ingredient i : dish.getRecipe().keySet()){
+				reduceIngredientStock(i, previousStock.get(i).intValue() - dish.getRecipe().get(i).intValue());
+			}
+		}
+
 	}
 
 	public synchronized void deliverOrder(Order order){
@@ -318,17 +326,9 @@ public class Server implements ServerInterface {
 		this.notifyUpdate();
 	}
 
-	public void reduceIngredientStock(Ingredient ingredient, Number number) throws NegativeStockException {
-		System.out.println(ingredient.getStock());
-		System.out.println(number.doubleValue());
+	public void reduceIngredientStock(Ingredient ingredient, Number number) {
 		Number postStock = ingredient.getStock().doubleValue() - number.doubleValue();
-		if (postStock.intValue() >= 0){
-			ingredient.setStock(postStock);
-		} else {
-
-			throw new NegativeStockException("Negative number of stock " + ingredient.getName() + " " + postStock.intValue());
-		}
-
+		ingredient.setStock(postStock);
 	}
 
 	@Override

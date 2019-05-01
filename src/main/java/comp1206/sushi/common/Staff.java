@@ -92,7 +92,6 @@ public class Staff extends Model implements Runnable {
 	public void run(){
 		System.out.println("Running daemon thread " + name);
 		running = true;
-        System.out.println("Server status :" + server.resetting);
 		while (running && !server.resetting){
 			Dish dishToMake = null;
 			synchronized (this.server.dishStockDaemon){
@@ -104,7 +103,7 @@ public class Staff extends Model implements Runnable {
 			}
 			if (dishToMake != null){
                 System.out.println(dishToMake);
-				setStatus("Making dish ");
+				setStatus("Making dish");
                 try {
                     Random random = new Random();
                     int timeToMake = random.nextInt(41) + 20;
