@@ -39,11 +39,15 @@ public class Server implements ServerInterface {
 	public ArrayList<Thread> staffThreads = new ArrayList<>();
 	public ArrayList<Thread> droneThreads = new ArrayList<>();
 
-	public DishStockDaemon dishStockDaemon = new DishStockDaemon(this);
-	Thread dishDaemon;
+//	public DishStockDaemon dishStockDaemon = new DishStockDaemon(this);
+//	Thread dishDaemon;
+
+	public DishStock dishStockDaemon = new DishStock(this);
 
 	public IngredientStockDaemon ingredientStockDaemon = new IngredientStockDaemon(this);
 	Thread ingredientDaemon;
+
+
 
 	List<Dish> dishesBeingMade = new ArrayList<>();
 	public volatile boolean resetting = false;
@@ -62,8 +66,8 @@ public class Server implements ServerInterface {
 		restaurant = new Restaurant("Mock Restaurant",restaurantPostcode);
 
 
-		dishDaemon = new Thread(dishStockDaemon);
-		dishDaemon.start();
+//		dishDaemon = new Thread(dishStockDaemon);
+//		dishDaemon.start();
 
 		ingredientDaemon = new Thread(ingredientStockDaemon);
 		ingredientDaemon.start();
@@ -77,39 +81,39 @@ public class Server implements ServerInterface {
 
 
 		Postcode postcode1 = addPostcode("SO17 1TJ", this.restaurant);
-		Postcode postcode2 = addPostcode("SO17 1BX", this.restaurant);
-		Postcode postcode3 = addPostcode("SO17 2NJ", this.restaurant);
-		Postcode postcode4 = addPostcode("SO17 1TW", this.restaurant);
-		Postcode postcode5 = addPostcode("SO17 2LB", this.restaurant);
-////
+//		Postcode postcode2 = addPostcode("SO17 1BX", this.restaurant);
+//		Postcode postcode3 = addPostcode("SO17 2NJ", this.restaurant);
+//		Postcode postcode4 = addPostcode("SO17 1TW", this.restaurant);
+//		Postcode postcode5 = addPostcode("SO17 2LB", this.restaurant);
+//////
 		Supplier supplier1 = addSupplier("Supplier 1",postcode1);
-		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
-		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
-
+//		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
+//		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
+//
 		Ingredient ingredient1 = addIngredient("Ingredient 1","grams",supplier1,1,5,1);
-		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
-		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
-
-		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
-		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
-		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
-		User user = addUser("a", "a", "a", postcode1);
+//		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
+//		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
 //
-//
-		addIngredientToDish(dish1,ingredient1,1);
-		addIngredientToDish(dish1,ingredient2,2);
-		addIngredientToDish(dish2,ingredient2,3);
-		addIngredientToDish(dish2,ingredient3,1);
-		addIngredientToDish(dish3,ingredient1,2);
-		addIngredientToDish(dish3,ingredient3,1);
-//
-		addStaff("Staff 1");
-		addStaff("Staff 2");
-		addStaff("Staff 3");
-//
-		addDrone(1);
-		addDrone(2);
-		addDrone(3);
+//		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
+//		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
+//		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
+//		User user = addUser("a", "a", "a", postcode1);
+////
+////
+//		addIngredientToDish(dish1,ingredient1,1);
+//		addIngredientToDish(dish1,ingredient2,2);
+//		addIngredientToDish(dish2,ingredient2,3);
+//		addIngredientToDish(dish2,ingredient3,1);
+//		addIngredientToDish(dish3,ingredient1,2);
+//		addIngredientToDish(dish3,ingredient3,1);
+////
+//		addStaff("Staff 1");
+//		addStaff("Staff 2");
+//		addStaff("Staff 3");
+////
+//		addDrone(1);
+//		addDrone(2);
+//		addDrone(3);
 
 
 	}
@@ -169,23 +173,29 @@ public class Server implements ServerInterface {
 		notifyUpdate();
 	}
 
-	public boolean makeDish(Dish dish){
-		// returns true if dish is successful
-		// else false
-		Map<Ingredient,Number> previousStock = this.getDishIngredientStock(dish);
-		try{
-			for (Ingredient i: this.getRecipe(dish).keySet()){
-				reduceIngredientStock(i, this.getRecipe(dish).get(i));
-			}
-			dish.setStock(dish.getStock().doubleValue() + dish.getRestockAmount().intValue());
-			this.notifyUpdate();
-			return true;
-		} catch (Exception e){
-			for (Ingredient i: previousStock.keySet()){
-				this.setStock(i, previousStock.get(i));
-			}
-			return false;
-		}
+//	public boolean makeDish(Dish dish){
+//		// returns true if dish is successful
+//		// else false
+//		Map<Ingredient,Number> previousStock = this.getDishIngredientStock(dish);
+//		try{
+//			for (Ingredient i: this.getRecipe(dish).keySet()){
+//				reduceIngredientStock(i, this.getRecipe(dish).get(i));
+//			}
+//			dish.setStock(dish.getStock().doubleValue() + dish.getRestockAmount().intValue());
+//			this.notifyUpdate();
+//			return true;
+//		} catch (Exception e){
+//			e.printStackTrace();
+//			System.out.println("Cant make dish");
+//			for (Ingredient i: previousStock.keySet()){
+//				this.setStock(i, previousStock.get(i));
+//			}
+//			return false;
+//		}
+//	}
+
+	public void makeDish(Dish dish){
+		Map<Ingredient, Number> previousStock = this.getDishIngredientStock(dish);
 	}
 
 	public synchronized void deliverOrder(Order order){
@@ -232,6 +242,7 @@ public class Server implements ServerInterface {
 		Dish newDish = new Dish(name,description,price,restockThreshold,restockAmount);
 		this.dishes.add(newDish);
 		serverComms.sendMessageToAll(newDish);
+//		dishStockDaemon.addNewDish(newDish);
 		this.notifyUpdate();
 		return newDish;
 	}
@@ -241,6 +252,9 @@ public class Server implements ServerInterface {
 		this.dishes.add(newDish);
 		this.notifyUpdate();
 		newDish.setRecipe(recipie);
+		serverComms.sendMessageToAll(newDish);
+		dishStockDaemon.addNewDish(newDish);
+
 		this.notifyUpdate();
 		return newDish;
 	}
@@ -311,7 +325,8 @@ public class Server implements ServerInterface {
 		if (postStock.intValue() >= 0){
 			ingredient.setStock(postStock);
 		} else {
-			throw new NegativeStockException("Negative number of stock");
+
+			throw new NegativeStockException("Negative number of stock " + ingredient.getName() + " " + postStock.intValue());
 		}
 
 	}

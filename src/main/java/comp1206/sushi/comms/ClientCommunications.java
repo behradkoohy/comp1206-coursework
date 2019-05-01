@@ -42,7 +42,6 @@ public class ClientCommunications {
         }
         kryonetClient.addListener(new Listener() {
             public void received (Connection connection, Object object) {
-                System.out.println("RECIEVED ");
                 if (object instanceof List) {
                     if (((ArrayList) object).size() > 0){
                         ArrayList recievedList = (ArrayList) object;

@@ -123,7 +123,9 @@ public class Drone extends Model implements Runnable{
 	public void run() {
 		System.out.println("Running thread for drone with speed " + getSpeed());
 		running = true;
+//		System.out.println(server.resetting);
 		while (running && !server.resetting){
+
 			Ingredient ingredientToGet = null;
 			synchronized (this.server.ingredientStockDaemon){
 				try {
@@ -140,24 +142,39 @@ public class Drone extends Model implements Runnable{
 				} catch (NullPointerException e){
 					continue;
 				}
-				for (Drone d : this.server.getDrones()){
-					if (d.getIngredientBeingDelivered() != null && d.getIngredientBeingDelivered().equals(ingredientToGet)) {
-						numberToBe += ingredientToGet.getRestockAmount().intValue();
+				synchronized (this.server.drones){
+					for (Drone d : this.server.getDrones()){
+						if (d.getIngredientBeingDelivered() != null && d.getIngredientBeingDelivered().equals(ingredientToGet)) {
+							numberToBe += ingredientToGet.getRestockAmount().intValue();
+						}
 					}
 				}
 				if (numberToBe < ingredientToGet.getRestockThreshold().intValue()){
 					ingredientBeingDelivered = ingredientToGet;
-					System.out.println(ingredientToGet.getName() + " being made");
+//					System.out.println(ingredientToGet.getName() + " being made");
 					try{
-						Number distanceToTravel = ingredientToGet.getSupplier().getDistance().doubleValue() * 1000;
-						Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
-						for (int t = 0; t < timeToTravel.doubleValue(); t++){
-							Thread.sleep(1000);
-							double distanceGone = getSpeed().doubleValue() * t;
-							setProgress((distanceGone*100)/distanceToTravel.doubleValue());
-						}
+						if (this.server.getIngredients().contains(ingredientBeingDelivered)){
+							Number distanceToTravel = ingredientToGet.getSupplier().getDistance().doubleValue() * 1000;
+							Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
+							boolean loopCompleted = true;
+							for (int t = 0; t < timeToTravel.doubleValue(); t++) {
+								Thread.sleep(1000);
+								double distanceGone = getSpeed().doubleValue() * t;
 
-						server.deliverIngredients(ingredientToGet);
+								setProgress((distanceGone * 100) / distanceToTravel.doubleValue());
+								if (!this.server.getIngredients().contains(ingredientBeingDelivered)){
+									loopCompleted = false;
+									break;
+								}
+								if (this.server.getIngredientStockLevels().get(ingredientBeingDelivered).intValue() >= ingredientBeingDelivered.getRestockThreshold().intValue()){
+									loopCompleted = false;
+									break;
+								}
+							}
+							if (loopCompleted){
+								server.deliverIngredients(ingredientToGet);
+							}
+						}
 					} catch (Exception e){
 						e.printStackTrace();
 					}
