@@ -92,33 +92,117 @@ public class Staff extends Model implements Runnable {
 	public void run(){
 		System.out.println("Running daemon thread " + name);
 		running = true;
-		while (running && !server.resetting){
-			Dish dishToMake = null;
-			synchronized (this.server.dishStockDaemon){
-//                System.out.println(this.server.dishStockDaemon.dishesToBeMade.size());
-				if (!this.server.dishStockDaemon.isQueueEmpty()){
-					dishToMake = this.server.dishStockDaemon.getTopOfQueue();
-                    System.out.println("got dish " + dishToMake);
-				}
-			}
+		while (running && !this.server.resetting){
+			Dish dishToMake = this.server.stock.getDishToGet();
 			if (dishToMake != null){
-                System.out.println(dishToMake);
-				setStatus("Making dish");
-                try {
-                    Random random = new Random();
-                    int timeToMake = random.nextInt(41) + 20;
-                    System.out.println("sleeping for " + timeToMake);
-//                    Thread.sleep(1000 * (timeToMake));
-                    Thread.sleep(5000);
-                } catch (InterruptedException e){
-                    System.out.println(e.getMessage());
-                }
-                server.makeDish(dishToMake);
-                setBeingMadeDish(null);
-            }
+				System.out.println(dishToMake);
+				setBeingMadeDish(dishToMake);
+				Random random = new Random();
+				int timeToMake = random.nextInt(40) + 20;
+				this.server.stock.dishesBeingMade.add(dishToMake);
+				System.out.println(timeToMake);
+				setStatus("Making dish " + dishToMake.getName());
+				try {
+					Thread.sleep(timeToMake * 1000);
+				} catch (InterruptedException e){
+					e.printStackTrace();
+				}
+				setStatus("Idle");
+				setBeingMadeDish(null);
+				this.server.stock.dishesBeingMade.remove(dishToMake);
+				this.server.stock.restockDish(dishToMake);
+
+			}
+
 
 		}
+
+
+
+
+
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//		while (running && !server.resetting){
+//			Dish dishToMake = null;
+//			synchronized (this.server.dishStockDaemon){
+////                System.out.println(this.server.dishStockDaemon.dishesToBeMade.size());
+//				if (!this.server.dishStockDaemon.isQueueEmpty()){
+//					dishToMake = this.server.dishStockDaemon.getTopOfQueue();
+//                    System.out.println("got dish " + dishToMake);
+//				}
+//			}
+//			if (dishToMake != null){
+//                System.out.println(dishToMake);
+//				setStatus("Making dish");
+//                try {
+//                    Random random = new Random();
+//                    int timeToMake = random.nextInt(41) + 20;
+//                    System.out.println("sleeping for " + timeToMake);
+////                    Thread.sleep(1000 * (timeToMake));
+//                    Thread.sleep(5000);
+//                } catch (InterruptedException e){
+//                    System.out.println(e.getMessage());
+//                }
+//                server.makeDish(dishToMake);
+//                setBeingMadeDish(null);
+//            }
+//
+//		}
+
 
 //    @Override
 //	public void run() {

@@ -14,7 +14,6 @@ public class Ingredient extends Model implements Serializable {
 	private Number restockAmount;
 	private Number weight;
 
-	private Number stock;
 
 	public Ingredient(String name, String unit, Supplier supplier, Number restockThreshold,
 			Number restockAmount, Number weight) {
@@ -24,7 +23,6 @@ public class Ingredient extends Model implements Serializable {
 		this.setRestockThreshold(restockThreshold);
 		this.setRestockAmount(restockAmount);
 		this.setWeight(weight);
-		this.stock = 0;
 	}
 
 	public Ingredient(){}
@@ -77,12 +75,5 @@ public class Ingredient extends Model implements Serializable {
 		this.weight = weight;
 	}
 
-	public Number getStock() {
-		return stock;
-	}
-
-	public void setStock(Number stock) {
-		this.stock = stock;
-	}
 
 }

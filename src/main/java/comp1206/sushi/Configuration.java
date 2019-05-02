@@ -156,10 +156,11 @@ public class Configuration {
                             if (ingredientStockModifier == null){
                                 // pass
                             } else {
-                                ingredientStockModifier.setStock(Double.parseDouble(splitString[2]));
+                                this.server.setStock(ingredientStockModifier, Double.parseDouble(splitString[2]));
                             }
                         } else {
-                            dishStockModifer.setStock(Double.parseDouble(splitString[2]));
+//                            dishStockModifer.setStock(Double.parseDouble(splitString[2]));
+                            this.server.setStock(dishStockModifer, Double.parseDouble(splitString[2]));
                         }
                         break; // TODO: FIGURE THIS STUFF OUT
                     case "STAFF":

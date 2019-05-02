@@ -24,9 +24,7 @@ public class Server implements ServerInterface {
 
     private static final Logger logger = LogManager.getLogger("Server");
 
-
-
-	public Restaurant restaurant;
+    public Restaurant restaurant;
 	public ArrayList<Dish> dishes = new ArrayList<Dish>();
 	public CopyOnWriteArrayList<Drone> drones = new CopyOnWriteArrayList<Drone>();
 	public ArrayList<Ingredient> ingredients = new ArrayList<Ingredient>();
@@ -39,23 +37,13 @@ public class Server implements ServerInterface {
 	public ArrayList<Thread> staffThreads = new ArrayList<>();
 	public ArrayList<Thread> droneThreads = new ArrayList<>();
 
-//	public DishStockDaemon dishStockDaemon = new DishStockDaemon(this);
-//	Thread dishDaemon;
-
-	public DishStock dishStockDaemon = new DishStock(this);
-
-	public IngredientStockDaemon ingredientStockDaemon = new IngredientStockDaemon(this);
-	Thread ingredientDaemon;
-
-
 
 	List<Dish> dishesBeingMade = new ArrayList<>();
 	public volatile boolean resetting = false;
 
 	ServerCommunications serverComms;
 
-	public DeliveryQueue deliveryQueue = new DeliveryQueue();
-
+	public Stock stock = new Stock(this);
 
 	public Server() {
 
@@ -69,8 +57,6 @@ public class Server implements ServerInterface {
 //		dishDaemon = new Thread(dishStockDaemon);
 //		dishDaemon.start();
 
-		ingredientDaemon = new Thread(ingredientStockDaemon);
-		ingredientDaemon.start();
 
 		serverComms = new ServerCommunications(this);
 
@@ -94,13 +80,13 @@ public class Server implements ServerInterface {
 //		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
 //		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
 //
-//		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
+		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
 //		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
 //		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
 //		User user = addUser("a", "a", "a", postcode1);
 ////
 ////
-//		addIngredientToDish(dish1,ingredient1,1);
+		addIngredientToDish(dish1,ingredient1,1);
 //		addIngredientToDish(dish1,ingredient2,2);
 //		addIngredientToDish(dish2,ingredient2,3);
 //		addIngredientToDish(dish2,ingredient3,1);
@@ -111,7 +97,7 @@ public class Server implements ServerInterface {
 //		addStaff("Staff 2");
 //		addStaff("Staff 3");
 ////
-//		addDrone(1);
+		addDrone(100);
 //		addDrone(2);
 //		addDrone(3);
 
@@ -136,8 +122,6 @@ public class Server implements ServerInterface {
 		for (Drone d : drones){
 			d.terminate();
 		}
-		dishStockDaemon.resetSignal();
-		ingredientStockDaemon.resetSignal();
 		dishes = new ArrayList<Dish>();
 		drones = new CopyOnWriteArrayList<Drone>();
 		ingredients = new ArrayList<Ingredient>();
@@ -148,87 +132,42 @@ public class Server implements ServerInterface {
 		postcodes = new ArrayList<Postcode>();
 		listeners = new ArrayList<UpdateListener>();
 		staffThreads = new ArrayList<Thread>();
-		deliveryQueue = new DeliveryQueue();
 		resetting = false;
 	}
 
 	public synchronized Map<Ingredient, Number> getDishIngredientStock(Dish dish){
-		Map<Ingredient, Number> oldStock = new HashMap<>();
+		Map<Ingredient, Number> ingredientsForDish = new HashMap<>();
 		for (Ingredient i : dish.getRecipe().keySet()){
-			if (i != null){
-				System.out.println(i);
-				oldStock.put(i, i.getStock());
-			}
+			ingredientsForDish.put(i, stock.getDishStock().get(i));
 		}
-		return oldStock;
+		return ingredientsForDish;
 	}
 
 	public void cancelOrder(CancelOrder cancelOrder){
 		for (Order o : this.getOrders()){
 			if (o.getName().equals(cancelOrder.getOrder().getName())){
 				o.setStatus("Cancelled");
-				deliveryQueue.cancelOrder(o);
 			}
 		}
 		notifyUpdate();
 	}
 
-//	public boolean makeDish(Dish dish){
-//		// returns true if dish is successful
-//		// else false
-//		Map<Ingredient,Number> previousStock = this.getDishIngredientStock(dish);
-//		try{
-//			for (Ingredient i: this.getRecipe(dish).keySet()){
-//				reduceIngredientStock(i, this.getRecipe(dish).get(i));
-//			}
-//			dish.setStock(dish.getStock().doubleValue() + dish.getRestockAmount().intValue());
-//			this.notifyUpdate();
-//			return true;
-//		} catch (Exception e){
-//			e.printStackTrace();
-//			System.out.println("Cant make dish");
-//			for (Ingredient i: previousStock.keySet()){
-//				this.setStock(i, previousStock.get(i));
-//			}
-//			return false;
+
+//
+//
+//	public synchronized void deliverIngredients(Ingredient ingredient){
+//		System.out.println("Call to deliver ingredients");
+//		synchronized (ingredient){
+//			int newStock = ingredient.getRestockAmount().intValue();
+//			int oldStock = ingredient.getStock().intValue();
+//			ingredient.setStock(newStock + oldStock);
+////			ingredient.setStock(this.getIngredientStockLevels().get(ingredient).intValue() + (1));
 //		}
+//
 //	}
-
-	// TODO: Implement this
-	public void makeDish(Dish dish){
-		// CHECK IF ENOUGH STOCK EXISTS BEFORE CALLING THIS FUNCTION
-		Map<Ingredient, Number> previousStock = this.getDishIngredientStock(dish);
-		synchronized (this.ingredients){
-			for (Ingredient i : dish.getRecipe().keySet()){
-				reduceIngredientStock(i, previousStock.get(i).intValue() - dish.getRecipe().get(i).intValue());
-			}
-		}
-
-	}
-
-	public synchronized void deliverOrder(Order order){
-		System.out.println("Call to deliver order");
-		for (Order o : this.getOrders()){
-			if (o.getOrderDetails().equals(order.getOrderDetails()) && o.getName().equals(order.getName())){
-				o.setStatus("Completed");
-			}
-		}
-	}
-
-	public synchronized void deliverIngredients(Ingredient ingredient){
-		System.out.println("Call to deliver ingredients");
-		synchronized (ingredient){
-			int newStock = ingredient.getRestockAmount().intValue();
-			int oldStock = ingredient.getStock().intValue();
-			ingredient.setStock(newStock + oldStock);
-//			ingredient.setStock(this.getIngredientStockLevels().get(ingredient).intValue() + (1));
-		}
-
-	}
 
 	public Order addOrder(Order order){
 		this.orders.add(order);
-		deliveryQueue.addToQueue(order);
 		return order;
 	}
 
@@ -250,7 +189,8 @@ public class Server implements ServerInterface {
 		Dish newDish = new Dish(name,description,price,restockThreshold,restockAmount);
 		this.dishes.add(newDish);
 		serverComms.sendMessageToAll(newDish);
-//		dishStockDaemon.addNewDish(newDish);
+		this.setStock(newDish, 0);
+		this.stock.addDish(newDish);
 		this.notifyUpdate();
 		return newDish;
 	}
@@ -261,8 +201,7 @@ public class Server implements ServerInterface {
 		this.notifyUpdate();
 		newDish.setRecipe(recipie);
 		serverComms.sendMessageToAll(newDish);
-		dishStockDaemon.addNewDish(newDish);
-
+		this.stock.addDish(newDish);
 		this.notifyUpdate();
 		return newDish;
 	}
@@ -276,13 +215,7 @@ public class Server implements ServerInterface {
 
 	@Override
 	public Map<Dish, Number> getDishStockLevels() {
-		Random random = new Random();
-		List<Dish> dishes = getDishes();
-		HashMap<Dish, Number> levels = new HashMap<Dish, Number>();
-		for(Dish dish : dishes) {
-			levels.put(dish,random.nextInt(50));
-		}
-		return levels;
+		return stock.getDishStock();
 	}
 	
 	@Override
@@ -297,12 +230,12 @@ public class Server implements ServerInterface {
 	
 	@Override
 	public void setStock(Dish dish, Number stock) {
-	
+		this.stock.setStock(dish, stock);
 	}
 
 	@Override
 	public void setStock(Ingredient ingredient, Number stock) {
-		
+		this.stock.setStock(ingredient, stock);
 	}
 
 	@Override
@@ -311,9 +244,9 @@ public class Server implements ServerInterface {
 	}
 
 	@Override
-	public Ingredient addIngredient(String name, String unit, Supplier supplier,
-			Number restockThreshold, Number restockAmount, Number weight) {
+	public Ingredient addIngredient(String name, String unit, Supplier supplier, Number restockThreshold, Number restockAmount, Number weight) {
 		Ingredient mockIngredient = new Ingredient(name,unit,supplier,restockThreshold,restockAmount,weight);
+		stock.addIngredient(mockIngredient);
 		this.ingredients.add(mockIngredient);
 		this.notifyUpdate();
 		return mockIngredient;
@@ -326,10 +259,6 @@ public class Server implements ServerInterface {
 		this.notifyUpdate();
 	}
 
-	public void reduceIngredientStock(Ingredient ingredient, Number number) {
-		Number postStock = ingredient.getStock().doubleValue() - number.doubleValue();
-		ingredient.setStock(postStock);
-	}
 
 	@Override
 	public List<Supplier> getSuppliers() {
@@ -431,13 +360,7 @@ public class Server implements ServerInterface {
 
 	@Override
 	public Map<Ingredient, Number> getIngredientStockLevels() {
-		Random random = new Random();
-		List<Ingredient> dishes = getIngredients();
-		HashMap<Ingredient, Number> levels = new HashMap<Ingredient, Number>();
-		for(Ingredient ingredient : ingredients) {
-			levels.put(ingredient,random.nextInt(50));
-		}
-		return levels;
+		return stock.getIngredientStock();
 	}
 
 	@Override
@@ -452,7 +375,7 @@ public class Server implements ServerInterface {
 
 	@Override
 	public Number getOrderDistance(Order order) {
-		Order mock = (Order)order;
+		Order mock = (Order) order;
 		return mock.getDistance();
 	}
 
@@ -541,32 +464,17 @@ public class Server implements ServerInterface {
 
 	@Override
 	public String getOrderStatus(Order order) {
-		Random rand = new Random();
-		if(rand.nextBoolean()) {
-			return "Complete";
-		} else {
-			return "Pending";
-		}
+		return order.getStatus();
 	}
 	
 	@Override
 	public String getDroneStatus(Drone drone) {
-		Random rand = new Random();
-		if(rand.nextBoolean()) {
-			return "Idle";
-		} else {
-			return "Flying";
-		}
+		return drone.getStatus();
 	}
 	
 	@Override
 	public String getStaffStatus(Staff staff) {
-		Random rand = new Random();
-		if(rand.nextBoolean()) {
-			return "Idle";
-		} else {
-			return "Working";
-		}
+		return staff.getStatus();
 	}
 
 	@Override
@@ -646,12 +554,8 @@ public class Server implements ServerInterface {
 	public void setRestaurant(Restaurant restaurant) { this.restaurant = restaurant; }
 
 
-	/**
-	 *
-	 * **/
 	public static void main(String[] args) {
 		Server s = new Server();
-
 	}
 
 }
