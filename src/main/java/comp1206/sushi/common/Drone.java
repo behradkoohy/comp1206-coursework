@@ -1,9 +1,6 @@
 package comp1206.sushi.common;
 
-import comp1206.sushi.common.Drone;
 import comp1206.sushi.server.Server;
-
-import java.util.Collections;
 
 public class Drone extends Model implements Runnable{
 
@@ -153,10 +150,54 @@ public class Drone extends Model implements Runnable{
 					synchronized (this.server.stock.ingredientsBeingMade) {
 						this.server.stock.ingredientsBeingMade.remove(ingredientToGet);
 						this.server.stock.restockIngredient(ingredientToGet);
-
 					}
 				}
+				ingredientToGet = null;
+			} else {
+				Order orderToDeliver = null;
+				synchronized (this.server.stock.orderQueue){
+					orderToDeliver = this.server.stock.getOrderToDeliver();
+//					System.out.println(this.server.stock.orderQueue.size());
 
+				}
+				if (orderToDeliver != null){
+
+					Postcode destination = orderToDeliver.getUser().getPostcode();
+					Number distanceToTravel = destination.getDistance().doubleValue() * 1000;
+					Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
+
+					setOrderBeingDelivered(orderToDeliver);
+					setDestination(destination);
+					setProgress(0);
+					boolean loopCompleted = true;
+					for (int t = 0; t < timeToTravel.doubleValue(); t++) {
+						System.out.println("loop");
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						double distanceGone = getSpeed().doubleValue() * t;
+						setProgress((distanceGone * 100) / distanceToTravel.doubleValue());
+					}
+					setProgress(0);
+					setOrderBeingDelivered(null);
+					setDestination(null);
+					if (loopCompleted) {
+						synchronized (orderToDeliver) {
+							orderToDeliver.setOrderComplete(true);
+							orderToDeliver.setStatus("Delivered");
+						}
+					} else {
+						synchronized (orderToDeliver){
+							orderToDeliver.setOrderComplete(false);
+							orderToDeliver.setStatus("In Progress");
+						}
+					}
+				}
+			}
+			if (ingredientToGet != null){
+				System.out.println("CHECKING FOR ORDERS");
 			}
 
 

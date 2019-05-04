@@ -5,7 +5,6 @@ import comp1206.sushi.server.Server;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 
 public class Stock {
 
@@ -14,12 +13,67 @@ public class Stock {
     Map<Dish, Number> dishStock = new ConcurrentHashMap<>();
     Map<Ingredient, Number> ingredientStock = new ConcurrentHashMap<>();
 
+    ConcurrentLinkedQueue<Order> orderQueue;
+
     List<Dish> dishesBeingMade = new ArrayList<>();
     List<Ingredient> ingredientsBeingMade = new ArrayList<>();
 
     public Stock(Server server){
         this.server = server;
+        synchronized (this.server.orders) {
+            this.orderQueue = new ConcurrentLinkedQueue<>(this.server.orders);
+        }
+    }
 
+    public Order getOrderToDeliver(){
+        if (orderQueue.size() > 0){
+            Order potentialToBeDelivered = orderQueue.poll();
+            boolean canBeMade = true;
+            synchronized (this.dishStock) {
+                for (Dish d : potentialToBeDelivered.getOrderDetails().keySet()) {
+                    Dish dInServer = d;
+                    for (Dish serverDishes : this.server.getDishes()){
+                        if (serverDishes.getName().equals(d.getName())){
+                            dInServer = serverDishes;
+                            System.out.println(dInServer);
+                        }
+                    }
+
+//                    if (dishStock.get(d) == null){
+//                        System.out.println(d);
+//                        canBeMade = false;
+//                        break;
+//                    }
+                    if (dishStock.get(dInServer).intValue() < potentialToBeDelivered.getOrderDetails().get(d).intValue()) {
+                        canBeMade = false;
+                        break;
+                    }
+                }
+                if (canBeMade){
+                    for (Dish d : potentialToBeDelivered.getOrderDetails().keySet()){
+                        Dish serverEquivelantDish = null;
+                        for (Dish dInServer : this.server.getDishes()){
+                            if (d.getName().equals(dInServer.getName())){
+                                serverEquivelantDish = dInServer;
+                            }
+                        }
+                        dishStock.put(serverEquivelantDish, dishStock.get(serverEquivelantDish).intValue() - potentialToBeDelivered.getOrderDetails().get(d).intValue());
+                    }
+                    System.out.println(potentialToBeDelivered);
+                    return potentialToBeDelivered;
+                } else {
+                    orderQueue.add(potentialToBeDelivered);
+                    return null;
+                }
+            }
+
+        } else {
+            return null;
+        }
+    }
+
+    public void addOrderToQueue(Order order){
+        this.orderQueue.add(order);
     }
 
     public synchronized Ingredient getIngredientToGet(){
@@ -42,13 +96,13 @@ public class Stock {
     }
 
     public synchronized Dish getDishToGet(){
-        System.out.println(dishStock.keySet().size());
         for (Dish d : dishStock.keySet()){
             if (dishStock.get(d).intValue() + (Collections.frequency(dishesBeingMade, d) * d.getRestockAmount().intValue()) < d.getRestockThreshold().intValue()){
                 if (d.getRecipe() == null){
                     continue;
                 }
                 if (canDishBeMade(d)){
+                    dishesBeingMade.add(d);
                     return d;
                 }
             }
@@ -60,11 +114,15 @@ public class Stock {
         ingredientStock.put(i, ingredientStock.get(i).intValue() + i.getRestockAmount().intValue());
     }
 
-    public void restockDish(Dish d){
-        dishStock.put(d, dishStock.get(d).intValue() + d.getRestockAmount().intValue());
+    public void beginRestock(Dish d){
         for (Ingredient i : d.getRecipe().keySet()){
             ingredientStock.put(i, ingredientStock.get(i).intValue() - d.getRecipe().get(i).intValue());
         }
+    }
+
+    public void restockDish(Dish d){
+        dishStock.put(d, dishStock.get(d).intValue() + d.getRestockAmount().intValue());
+
     }
 
     public void addIngredient(Ingredient i){

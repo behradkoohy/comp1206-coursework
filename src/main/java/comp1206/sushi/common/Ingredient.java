@@ -4,6 +4,7 @@ import comp1206.sushi.common.Ingredient;
 import comp1206.sushi.common.Supplier;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Ingredient extends Model implements Serializable {
 
@@ -76,4 +77,21 @@ public class Ingredient extends Model implements Serializable {
 	}
 
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Ingredient that = (Ingredient) o;
+		return Objects.equals(name, that.name) &&
+				Objects.equals(unit, that.unit) &&
+				Objects.equals(supplier, that.supplier) &&
+				Objects.equals(restockThreshold, that.restockThreshold) &&
+				Objects.equals(restockAmount, that.restockAmount) &&
+				Objects.equals(weight, that.weight);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, unit, supplier, restockThreshold, restockAmount, weight);
+	}
 }

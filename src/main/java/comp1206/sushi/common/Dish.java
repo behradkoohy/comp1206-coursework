@@ -3,6 +3,7 @@ package comp1206.sushi.common;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import comp1206.sushi.common.Dish;
 import comp1206.sushi.common.Ingredient;
@@ -78,6 +79,19 @@ public class Dish extends Model implements Serializable{
 
 	public Number getRestockAmount() {
 		return this.restockAmount;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Dish dish = (Dish) o;
+		return name.equals(dish.name) &&
+				description.equals(dish.description) &&
+				price.equals(dish.price) &&
+				recipe.equals(dish.recipe) &&
+				restockThreshold.equals(dish.restockThreshold) &&
+				restockAmount.equals(dish.restockAmount);
 	}
 
 }

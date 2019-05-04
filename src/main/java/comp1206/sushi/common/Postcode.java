@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import comp1206.sushi.common.Postcode;
 
@@ -126,5 +127,21 @@ public class Postcode extends Model implements Serializable {
 		}
 
 	}
-	
+
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Postcode postcode = (Postcode) o;
+		return Double.compare(postcode.EARTH_RADIUS, EARTH_RADIUS) == 0 &&
+				Objects.equals(name, postcode.name) &&
+				Objects.equals(latLong, postcode.latLong) &&
+				Objects.equals(distance, postcode.distance);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, latLong, distance, EARTH_RADIUS);
+	}
 }

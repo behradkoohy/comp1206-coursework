@@ -49,33 +49,6 @@ public class Staff extends Model implements Runnable {
 		this.status = status;
 	}
 
-//	@Override
-//	public void run() {
-//		System.out.println("Running thread " + this.getName());
-//		running = true;
-//
-//		while (running && !server.resetting){
-//			setStatus("Idle");
-//			int pos = 0;
-//			List<Dish> dishNeedRestocking = server.checkDishStock();
-//			while (pos < dishNeedRestocking.size()) {
-//				if (dishNeedRestocking.size() >= pos) {
-//					Dish d = dishNeedRestocking.get(pos);
-//					server.makeDish(d);
-//					beingMadeDish = d;
-//					setStatus("Making dish " + beingMadeDish.getName());
-//					try {
-//						Thread.sleep(1000 * 5);
-//					} catch (InterruptedException e){
-//						System.out.println(e.getMessage());
-//					}
-//				}
-//				pos++;
-//			}
-//		}
-//		System.out.println("END RUN");
-//	}
-
 	public void terminate(){
 		running = false;
 	}
@@ -95,13 +68,12 @@ public class Staff extends Model implements Runnable {
 		while (running && !this.server.resetting){
 			Dish dishToMake = this.server.stock.getDishToGet();
 			if (dishToMake != null){
-				System.out.println(dishToMake);
 				setBeingMadeDish(dishToMake);
 				Random random = new Random();
 				int timeToMake = random.nextInt(40) + 20;
-				this.server.stock.dishesBeingMade.add(dishToMake);
-				System.out.println(timeToMake);
+//				this.server.stock.dishesBeingMade.add(dishToMake);
 				setStatus("Making dish " + dishToMake.getName());
+				this.server.stock.beginRestock(dishToMake);
 				try {
 					Thread.sleep(timeToMake * 1000);
 				} catch (InterruptedException e){
@@ -117,140 +89,7 @@ public class Staff extends Model implements Runnable {
 
 		}
 
-
-
-
-
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	//		while (running && !server.resetting){
-//			Dish dishToMake = null;
-//			synchronized (this.server.dishStockDaemon){
-////                System.out.println(this.server.dishStockDaemon.dishesToBeMade.size());
-//				if (!this.server.dishStockDaemon.isQueueEmpty()){
-//					dishToMake = this.server.dishStockDaemon.getTopOfQueue();
-//                    System.out.println("got dish " + dishToMake);
-//				}
-//			}
-//			if (dishToMake != null){
-//                System.out.println(dishToMake);
-//				setStatus("Making dish");
-//                try {
-//                    Random random = new Random();
-//                    int timeToMake = random.nextInt(41) + 20;
-//                    System.out.println("sleeping for " + timeToMake);
-////                    Thread.sleep(1000 * (timeToMake));
-//                    Thread.sleep(5000);
-//                } catch (InterruptedException e){
-//                    System.out.println(e.getMessage());
-//                }
-//                server.makeDish(dishToMake);
-//                setBeingMadeDish(null);
-//            }
-//
-//		}
-
-
-//    @Override
-//	public void run() {
-//		System.out.println("Running daemon thread " + name);
-//		running = true;
-//		while (running && !server.resetting){
-//			Dish dishToMake = null;
-//			synchronized (this.server.dishStockDaemon){
-//				try{
-//					dishToMake = this.server.dishStockDaemon.getTopOfQueue();
-//				} catch (NoSuchElementException e){
-//					setStatus("Idle");
-//				}
-//			}
-//			if (dishToMake != null){
-//				int numberToBe;
-//				try {
-//					numberToBe = this.server.getDishStockLevels().get(dishToMake).intValue();
-//				} catch (NullPointerException e){
-//					continue;
-//				}
-//				for (Staff s : this.server.getStaff()){
-//					if (s.getBeingMadeDish() != null && s.getBeingMadeDish().equals(dishToMake)){
-//						numberToBe += dishToMake.getRestockAmount().intValue();
-//					}
-//				}
-//				if (numberToBe < dishToMake.getRestockThreshold().intValue()){
-//					beingMadeDish = dishToMake;
-//					server.makeDish(dishToMake);
-//					setStatus("Making dish " + beingMadeDish.getName());
-//					try {
-//						Random random = new Random();
-//						int timeToMake = random.nextInt(41) + 20;
-//						Thread.sleep(1000 * (timeToMake));
-//					} catch (InterruptedException e){
-//						System.out.println(e.getMessage());
-//					}
-//					setBeingMadeDish(null);
-//				} else {
-//					synchronized (this.server.dishStockDaemon.dishesToBeMade){
-//						this.server.dishStockDaemon.dishesToBeMade.remove(dishToMake);
-//					}
-//				}
-//			}
-//		}
-//	}
-
-
 
 
 }

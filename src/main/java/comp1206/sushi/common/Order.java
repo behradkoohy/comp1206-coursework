@@ -27,7 +27,7 @@ public class Order extends Model implements Serializable {
 
 	public Order(){}
 	public Number getDistance() {
-		return 1;
+		return user.getPostcode().getDistance();
 	}
 
 	@Override

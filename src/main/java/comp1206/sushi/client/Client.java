@@ -161,9 +161,9 @@ public class Client implements ClientInterface {
 	@Override
 	public void updateDishInBasket(User user, Dish dish, Number quantity) {
 		if (currentlyLoggedInUser != null){
-			currentlyLoggedInUser.addToBasket(dish, quantity);
+			currentlyLoggedInUser.getBasket().replace(dish, quantity);
 		} else {
-			user.addToBasket(dish, quantity);
+			user.getBasket().replace(dish, quantity);
 		}
 	}
 
