@@ -174,11 +174,13 @@ public class Client implements ClientInterface {
 			Order newOrder = new Order(currentlyLoggedInUser.getName() , currentlyLoggedInUser.getBasket(), currentlyLoggedInUser);
 			orders.add(newOrder);
 			clientComms.sendMessage(newOrder);
+			currentlyLoggedInUser.resetBasket();
 			return newOrder;
 		} else {
 			Order newOrder = new Order(user.getName() , user.getBasket(), user);
 			orders.add(newOrder);
 			clientComms.sendMessage(newOrder);
+			user.resetBasket();
 			return newOrder;
 		}
 	}
