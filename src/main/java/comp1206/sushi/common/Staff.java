@@ -24,6 +24,13 @@ public class Staff extends Model implements Runnable {
 		this.server = server;
 	}
 
+	public Staff(String name, Server server, Number fatigue, String status) {
+		this.setName(name);
+		this.server = server;
+		this.setFatigue(fatigue);
+		this.status = status;
+	}
+
 	public String getName() {
 		return name;
 	}

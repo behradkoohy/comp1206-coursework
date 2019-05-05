@@ -29,8 +29,7 @@ public class Dish extends Model implements Serializable{
 		this.recipe = new HashMap<Ingredient,Number>();
 	}
 
-	public Dish(){
-	}
+	public Dish(){}
 
 
 	public String getName() {

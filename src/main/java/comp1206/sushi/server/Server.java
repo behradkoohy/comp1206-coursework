@@ -1,6 +1,7 @@
 package comp1206.sushi.server;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,10 +18,11 @@ import comp1206.sushi.comms.CancelOrder;
 import comp1206.sushi.comms.RemoveDish;
 import comp1206.sushi.comms.ServerCommunications;
 import comp1206.sushi.exceptions.NegativeStockException;
+import comp1206.sushi.persistance.Persistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Server implements ServerInterface {
+public class Server implements ServerInterface, Serializable {
 
     private static final Logger logger = LogManager.getLogger("Server");
 
@@ -43,9 +45,14 @@ public class Server implements ServerInterface {
 
 	ServerCommunications serverComms;
 
+	Persistance serverPersistance;
+	Thread persistanceDaemon;
+
 	public Stock stock = new Stock(this);
 
+
 	public Server() {
+
 
 
 		logger.info("Starting up server...");
@@ -77,8 +84,6 @@ public class Server implements ServerInterface {
 		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
 		User user = addUser("a", "a", "a", postcode1);
 
-		setDishStock(dish1, 10);
-
 		addIngredientToDish(dish1,ingredient1,1);
 		addIngredientToDish(dish1,ingredient2,2);
 		addIngredientToDish(dish2,ingredient2,3);
@@ -94,6 +99,10 @@ public class Server implements ServerInterface {
 		addDrone(10);
 		addDrone(10);
 
+		serverPersistance = new Persistance(this);
+		persistanceDaemon = new Thread(serverPersistance);
+		persistanceDaemon.start();
+
 
 	}
 
@@ -105,11 +114,7 @@ public class Server implements ServerInterface {
 		dishesBeingMade.remove(dish);
 	}
 
-	public void setDishStock(Dish dish, Number number){
-		for (int x = 0; x < number.intValue(); x++){
-			this.stock.restockDish(dish);
-		}
-	}
+
 
 	public synchronized void resetServer(){
 		resetting = true;
@@ -119,6 +124,7 @@ public class Server implements ServerInterface {
 		for (Drone d : drones){
 			d.terminate();
 		}
+		serverPersistance.terminate();
 		dishes = new ArrayList<Dish>();
 		drones = new CopyOnWriteArrayList<Drone>();
 		ingredients = new ArrayList<Ingredient>();
@@ -130,6 +136,8 @@ public class Server implements ServerInterface {
 		listeners = new ArrayList<UpdateListener>();
 		staffThreads = new ArrayList<Thread>();
 		resetting = false;
+		serverPersistance = new Persistance(this);
+		persistanceDaemon = new Thread(serverPersistance);
 	}
 
 	public synchronized Map<Ingredient, Number> getDishIngredientStock(Dish dish){

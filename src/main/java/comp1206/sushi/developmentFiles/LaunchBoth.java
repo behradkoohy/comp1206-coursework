@@ -9,5 +9,6 @@ public class LaunchBoth {
         ServerApplication.main(argv);
         System.out.println("Running client");
         ClientApplication.main(argv);
+
     }
 }

@@ -21,12 +21,16 @@ public class Drone extends Model implements Runnable{
 
 
 	private volatile Ingredient ingredientBeingDelivered = null;
-
-
-
 	private volatile Order orderBeingDelivered = null;
 
 	public Drone(Number speed, Server server) {
+		this.setSpeed(speed);
+		this.setCapacity(1);
+		this.setBattery(100);
+		this.server = server;
+	}
+
+	public Drone(Number speed, Server server, Number capacity, Number battery) {
 		this.setSpeed(speed);
 		this.setCapacity(1);
 		this.setBattery(100);
