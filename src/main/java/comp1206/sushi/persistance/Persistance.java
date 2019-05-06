@@ -5,6 +5,7 @@ import comp1206.sushi.common.*;
 import comp1206.sushi.server.Server;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,106 +23,93 @@ public class Persistance implements Runnable {
     public List<SafeSendDrone> safeDrone = new ArrayList<>();
 
     public final String persistanceFile = "persistance.server";
-    File persistance;
+    File persistance = new File(persistanceFile);
 
     public volatile boolean running = false;
+    public volatile boolean paused = false;
 
     public Persistance(Server server) {
-        running = true;
-        persistance = new File(persistanceFile);
+        this.paused = true;
         this.server = server;
-        dishes = server.getDishes();
-        ingredients = server.getIngredients();
-        orders = server.getOrders();
-        suppliers = server.getSuppliers();
-        users = server.getUsers();
-        postcodes = server.getPostcodes();
-
-        for (Staff s : this.server.getStaff()){
-            safeStaff.add(new SafeSendStaff(s));
-        }
-        for (Drone d : this.server.getDrones()){
-            safeDrone.add(new SafeSendDrone(d));
-        }
-
         if (persistance.exists()){
             System.out.println("FILE EXISTS");
-
-            
-
-
-
-        } else {
-            ObjectOutputStream objectOutputStream;
-            FileOutputStream fileOutputStream;
             try {
-                persistance.createNewFile();
-                fileOutputStream = new FileOutputStream(persistance);
-                objectOutputStream = new ObjectOutputStream(fileOutputStream);
+                FileInputStream fileInputStream = new FileInputStream(persistance);
+                ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+                Object fileContents = objectInputStream.readObject();
+                if (fileContents != null){
+                    ArrayList<Object> persistantData = (ArrayList<Object>) fileContents;
+                    this.server.resetServer();
+                    this.server.postcodes = (ArrayList<Postcode>) persistantData.get(0);
+                    this.server.ingredients = (ArrayList<Ingredient>) persistantData.get(1);
+                    this.server.dishes = (ArrayList<Dish>) persistantData.get(2);
+                    this.server.users = (ArrayList<User>) persistantData.get(3);
+                    this.server.orders = (ArrayList<Order>) persistantData.get(4);
+                    System.out.println(persistantData.get(5));
+                    System.out.println((ArrayList<SafeSendDrone>) persistantData.get(5));
+                    for (SafeSendDrone d : (ArrayList<SafeSendDrone>) persistantData.get(5)){
+                        this.server.addDrone(d.getSpeed(), d.getCapacity(), d.getBattery());
+                    }
 
-                ArrayList<Object> serverContents = new ArrayList<>(Arrays.asList(dishes, ingredients, orders, suppliers, users, postcodes, safeDrone, safeStaff));
+
+                }
+
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        this.paused = false;
+    }
+
+
+    @Override
+    public void run() {
+        System.out.println("Starting thread");
+        System.out.println(running);
+        System.out.println(server.resetting);
+        System.out.println(paused);
+        running = true;
+        while (running && !server.resetting){
+            if (!paused) {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            ArrayList<Object> serverContents = new ArrayList<>();
+            serverContents.add(this.server.getPostcodes());
+            serverContents.add(this.server.getIngredients());
+            serverContents.add(this.server.getDishes());
+            serverContents.add(this.server.getUsers());
+            serverContents.add(this.server.getOrders());
+
+            ArrayList<SafeSendDrone> safeDrones = new ArrayList<>();
+            for (Drone d : this.server.getDrones()){
+                safeDrones.add(new SafeSendDrone(d));
+            }
+            ArrayList<SafeSendStaff> safeStaff = new ArrayList<>();
+            for (Staff d : this.server.getStaff()){
+                safeStaff.add(new SafeSendStaff(d));
+            }
+            serverContents.add(safeDrones);
+            serverContents.add(safeStaff);
+            serverContents.add(this.server.stock);
+            try {
+                FileOutputStream fileOutputStream = new FileOutputStream(persistance);
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
                 objectOutputStream.writeObject(serverContents);
-                System.out.println("Done");
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-
-
-    }
-
-    public void terminate(){
-
-    }
-
-    @Override
-    public void run() {
-        ObjectOutputStream objectOutputStream = null;
-        try {
-            FileOutputStream fileOutputStream;
-            fileOutputStream = new FileOutputStream(persistance);
-            objectOutputStream = new ObjectOutputStream(fileOutputStream);
-
-
-            System.out.println("Done");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        running = true;
-        while (!server.resetting && running) {
-            // Sleep for 2 seconds
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            // get the listd
-            dishes = server.getDishes();
-            ingredients = server.getIngredients();
-            orders = server.getOrders();
-            suppliers = server.getSuppliers();
-            users = server.getUsers();
-            postcodes = server.getPostcodes();
-            // Rebuild the staff and drones
-            safeStaff = new ArrayList<>();
-            safeDrone = new ArrayList<>();
-            for (Staff s : this.server.getStaff()){
-                safeStaff.add(new SafeSendStaff(s));
-            }
-            for (Drone d : this.server.getDrones()){
-                safeDrone.add(new SafeSendDrone(d));
-            }
-            ArrayList<Object> serverContents = new ArrayList<>(Arrays.asList(dishes, ingredients, orders, suppliers, users, postcodes, safeDrone, safeStaff));
-            try {
-                objectOutputStream.writeObject(serverContents);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
 
         }
     }

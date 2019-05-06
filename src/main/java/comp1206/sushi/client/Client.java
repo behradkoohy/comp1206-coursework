@@ -47,7 +47,6 @@ public class Client implements ClientInterface {
 	}
 
 	public void addDish(Dish dish){
-		System.out.println("Adding dish : " + dish.getName());
 		dishes.add(dish);
 		System.out.println(dishes);
 		this.notifyUpdate();
@@ -65,7 +64,6 @@ public class Client implements ClientInterface {
 	}
 
 	public synchronized void addPostcode(Postcode postcode){
-		System.out.println("Adding postcode : " + postcode.getName());
 		postcodes.add(postcode);
 		this.notifyUpdate();
 	}

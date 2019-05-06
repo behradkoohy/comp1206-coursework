@@ -65,39 +65,34 @@ public class Server implements ServerInterface, Serializable {
 
 
 
-		Postcode postcode1 = addPostcode("SO17 1TJ", this.restaurant);
-		Postcode postcode2 = addPostcode("SO17 1BX", this.restaurant);
-		Postcode postcode3 = addPostcode("SO17 2NJ", this.restaurant);
-		Postcode postcode4 = addPostcode("SO17 1TW", this.restaurant);
-		Postcode postcode5 = addPostcode("SO17 2LB", this.restaurant);
-//////
-		Supplier supplier1 = addSupplier("Supplier 1",postcode1);
-		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
-		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
+//		Postcode postcode1 = addPostcode("SO17 1TJ", this.restaurant);
+//		Postcode postcode2 = addPostcode("SO17 1BX", this.restaurant);
+//		Postcode postcode3 = addPostcode("SO17 2NJ", this.restaurant);
+//		Postcode postcode4 = addPostcode("SO17 1TW", this.restaurant);
+//		Postcode postcode5 = addPostcode("SO17 2LB", this.restaurant);
+//		Supplier supplier1 = addSupplier("Supplier 1",postcode1);
+//		Supplier supplier2 = addSupplier("Supplier 2",postcode2);
+//		Supplier supplier3 = addSupplier("Supplier 3",postcode3);
+//		Ingredient ingredient1 = addIngredient("Ingredient 1","grams",supplier1,1,5,1);
+//		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
+//		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
+//		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
+//		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
+//		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
+//		User user = addUser("a", "a", "a", postcode1);
 //
-		Ingredient ingredient1 = addIngredient("Ingredient 1","grams",supplier1,1,5,1);
-		Ingredient ingredient2 = addIngredient("Ingredient 2","grams",supplier2,1,5,1);
-		Ingredient ingredient3 = addIngredient("Ingredient 3","grams",supplier3,1,5,1);
-//
-		Dish dish1 = addDish("Dish 1","Dish 1",1,1,10);
-		Dish dish2 = addDish("Dish 2","Dish 2",2,1,10);
-		Dish dish3 = addDish("Dish 3","Dish 3",3,1,10);
-		User user = addUser("a", "a", "a", postcode1);
-
-		addIngredientToDish(dish1,ingredient1,1);
-		addIngredientToDish(dish1,ingredient2,2);
-		addIngredientToDish(dish2,ingredient2,3);
-		addIngredientToDish(dish2,ingredient3,1);
-		addIngredientToDish(dish3,ingredient1,2);
-		addIngredientToDish(dish3,ingredient3,1);
-////
-		addStaff("Staff 1");
-		addStaff("Staff 2");
-		addStaff("Staff 3");
-////
-		addDrone(10);
-		addDrone(10);
-		addDrone(10);
+//		addIngredientToDish(dish1,ingredient1,1);
+//		addIngredientToDish(dish1,ingredient2,2);
+//		addIngredientToDish(dish2,ingredient2,3);
+//		addIngredientToDish(dish2,ingredient3,1);
+//		addIngredientToDish(dish3,ingredient1,2);
+//		addIngredientToDish(dish3,ingredient3,1);
+//		addStaff("Staff 1");
+//		addStaff("Staff 2");
+//		addStaff("Staff 3");
+//		addDrone(10);
+//		addDrone(10);
+//		addDrone(10);
 
 		serverPersistance = new Persistance(this);
 		persistanceDaemon = new Thread(serverPersistance);
@@ -124,7 +119,6 @@ public class Server implements ServerInterface, Serializable {
 		for (Drone d : drones){
 			d.terminate();
 		}
-		serverPersistance.terminate();
 		dishes = new ArrayList<Dish>();
 		drones = new CopyOnWriteArrayList<Drone>();
 		ingredients = new ArrayList<Ingredient>();
@@ -136,8 +130,8 @@ public class Server implements ServerInterface, Serializable {
 		listeners = new ArrayList<UpdateListener>();
 		staffThreads = new ArrayList<Thread>();
 		resetting = false;
-		serverPersistance = new Persistance(this);
-		persistanceDaemon = new Thread(serverPersistance);
+//		serverPersistance = new Persistance(this);
+//		persistanceDaemon = new Thread(serverPersistance);
 	}
 
 	public synchronized Map<Ingredient, Number> getDishIngredientStock(Dish dish){
@@ -296,6 +290,24 @@ public class Server implements ServerInterface, Serializable {
 		return mock;
 	}
 
+	public Drone addDrone(Number speed, Number capacity, Number battery) {
+		System.out.println("ADDING PARTIAL DRONE");
+		Drone mock = new Drone(speed, this, capacity, battery);
+		synchronized (this.drones){
+			this.drones.add(mock);
+			Thread t = new Thread(mock);
+			try{
+				Thread.sleep(50);
+			} catch (InterruptedException e){
+				System.out.println("addDrone Interrupt");
+			}
+			droneThreads.add(t);
+			t.start();
+		}
+		return mock;
+	}
+
+
 	@Override
 	public void removeDrone(Drone drone) {
 		int index = this.drones.indexOf(drone);
@@ -311,6 +323,22 @@ public class Server implements ServerInterface, Serializable {
 	@Override
 	public Staff addStaff(String name) {
 		Staff mock = new Staff(name, this);
+		synchronized (this.staff){
+			this.staff.add(mock);
+			Thread t = new Thread(mock);
+			try{
+				Thread.sleep(50);
+			} catch (InterruptedException e){
+				System.out.println("addStaff Interrupt");
+			}
+			staffThreads.add(t);
+			t.start();
+		}
+		return mock;
+	}
+
+	public Staff addStaff(String name, String status, Number fatigue){
+		Staff mock = new Staff(name, this, fatigue, status);
 		synchronized (this.staff){
 			this.staff.add(mock);
 			Thread t = new Thread(mock);

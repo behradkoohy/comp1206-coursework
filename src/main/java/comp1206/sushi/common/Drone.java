@@ -32,8 +32,8 @@ public class Drone extends Model implements Runnable{
 
 	public Drone(Number speed, Server server, Number capacity, Number battery) {
 		this.setSpeed(speed);
-		this.setCapacity(1);
-		this.setBattery(100);
+		this.setCapacity(capacity);
+		this.setBattery(battery);
 		this.server = server;
 	}
 
