@@ -16,6 +16,7 @@ import comp1206.sushi.common.*;
 
 import comp1206.sushi.comms.CancelOrder;
 import comp1206.sushi.comms.RemoveDish;
+import comp1206.sushi.comms.ResetServer;
 import comp1206.sushi.comms.ServerCommunications;
 import comp1206.sushi.exceptions.NegativeStockException;
 import comp1206.sushi.persistance.Persistance;
@@ -39,6 +40,8 @@ public class Server implements ServerInterface, Serializable {
 	public ArrayList<Thread> staffThreads = new ArrayList<>();
 	public ArrayList<Thread> droneThreads = new ArrayList<>();
 
+
+	//TODO: client only adds new dishes
 
 	List<Dish> dishesBeingMade = new ArrayList<>();
 	public volatile boolean resetting = false;
@@ -129,9 +132,9 @@ public class Server implements ServerInterface, Serializable {
 		postcodes = new ArrayList<Postcode>();
 		listeners = new ArrayList<UpdateListener>();
 		staffThreads = new ArrayList<Thread>();
+		serverComms.sendMessageToAdd(new ResetServer());
+		stock = new Stock(this);
 		resetting = false;
-//		serverPersistance = new Persistance(this);
-//		persistanceDaemon = new Thread(serverPersistance);
 	}
 
 	public synchronized Map<Ingredient, Number> getDishIngredientStock(Dish dish){

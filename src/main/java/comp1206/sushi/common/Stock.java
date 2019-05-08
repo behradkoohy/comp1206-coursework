@@ -16,13 +16,20 @@ public class Stock {
     ConcurrentLinkedQueue<Order> orderQueue;
 
     List<Dish> dishesBeingMade = new ArrayList<>();
-    List<Ingredient> ingredientsBeingMade = new ArrayList<>();
 
+    List<Ingredient> ingredientsBeingMade = new ArrayList<>();
     public Stock(Server server){
         this.server = server;
         synchronized (this.server.orders) {
             this.orderQueue = new ConcurrentLinkedQueue<>(this.server.orders);
         }
+    }
+    public Stock(Server server,  Map<Dish, Number> dishStock, Map<Ingredient, Number> ingredientStock, ConcurrentLinkedQueue<Order> orderQueue){
+        this.server = server;
+        this.dishStock = dishStock;
+        this.ingredientStock = ingredientStock;
+        this.orderQueue = orderQueue;
+        this.dishesBeingMade = dishesBeingMade;
     }
 
     public Order getOrderToDeliver(){
@@ -112,6 +119,10 @@ public class Stock {
 
     public void restockIngredient(Ingredient i){
         ingredientStock.put(i, ingredientStock.get(i).intValue() + i.getRestockAmount().intValue());
+    }
+
+    public ConcurrentLinkedQueue<Order> getOrderQueue() {
+        return orderQueue;
     }
 
     public void beginRestock(Dish d){

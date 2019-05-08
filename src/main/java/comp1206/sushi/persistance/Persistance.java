@@ -45,12 +45,15 @@ public class Persistance implements Runnable {
                     this.server.dishes = (ArrayList<Dish>) persistantData.get(2);
                     this.server.users = (ArrayList<User>) persistantData.get(3);
                     this.server.orders = (ArrayList<Order>) persistantData.get(4);
-                    System.out.println(persistantData.get(5));
-                    System.out.println((ArrayList<SafeSendDrone>) persistantData.get(5));
-                    for (SafeSendDrone d : (ArrayList<SafeSendDrone>) persistantData.get(5)){
+                    this.server.suppliers = (ArrayList<Supplier>) persistantData.get(5);
+                    for (SafeSendDrone d : (ArrayList<SafeSendDrone>) persistantData.get(6)){
                         this.server.addDrone(d.getSpeed(), d.getCapacity(), d.getBattery());
                     }
-
+                    for (SafeSendStaff d : (ArrayList<SafeSendStaff>) persistantData.get(7)){
+                        this.server.addStaff(d.getName(), d.getStatus(), d.getFatigue());
+                    }
+                    SafeSendStock sentStock = (SafeSendStock) persistantData.get(8);
+                    this.server.stock = new Stock(this.server, sentStock.dishStock, sentStock.ingredientStock, sentStock.orderQueue);
 
                 }
 
@@ -89,6 +92,7 @@ public class Persistance implements Runnable {
             serverContents.add(this.server.getDishes());
             serverContents.add(this.server.getUsers());
             serverContents.add(this.server.getOrders());
+            serverContents.add(this.server.getSuppliers());
 
             ArrayList<SafeSendDrone> safeDrones = new ArrayList<>();
             for (Drone d : this.server.getDrones()){
@@ -100,7 +104,7 @@ public class Persistance implements Runnable {
             }
             serverContents.add(safeDrones);
             serverContents.add(safeStaff);
-            serverContents.add(this.server.stock);
+            serverContents.add(new SafeSendStock(this.server.stock));
             try {
                 FileOutputStream fileOutputStream = new FileOutputStream(persistance);
                 ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
