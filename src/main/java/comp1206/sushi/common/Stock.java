@@ -102,16 +102,30 @@ public class Stock {
         return true;
     }
 
+    /**
+     * @param dish  this is very powerful, will remove the dish
+     *
+     * */
+    public synchronized void removeDishFromStock(Dish dish){
+        synchronized (this.dishStock){
+            this.dishStock.remove(dish);
+        }
+    }
+
     public synchronized Dish getDishToGet(){
         for (Dish d : dishStock.keySet()){
-            if (dishStock.get(d).intValue() + (Collections.frequency(dishesBeingMade, d) * d.getRestockAmount().intValue()) < d.getRestockThreshold().intValue()){
-                if (d.getRecipe() == null){
-                    continue;
+            try{
+                if (dishStock.get(d).intValue() + (Collections.frequency(dishesBeingMade, d) * d.getRestockAmount().intValue()) < d.getRestockThreshold().intValue()){
+                    if (d.getRecipe() == null){
+                        continue;
+                    }
+                    if (canDishBeMade(d)){
+                        dishesBeingMade.add(d);
+                        return d;
+                    }
                 }
-                if (canDishBeMade(d)){
-                    dishesBeingMade.add(d);
-                    return d;
-                }
+            } catch (ConcurrentModificationException e){
+                e.printStackTrace();
             }
         }
         return null;

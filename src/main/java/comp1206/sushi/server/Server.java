@@ -201,6 +201,7 @@ public class Server implements ServerInterface, Serializable {
 	public void removeDish(Dish dish) {
 		this.dishes.remove(dish);
 		serverComms.sendMessageToAdd(new RemoveDish(dish));
+		this.stock.removeDishFromStock(dish);
 		this.notifyUpdate();
 	}
 

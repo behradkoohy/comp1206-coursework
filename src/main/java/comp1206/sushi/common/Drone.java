@@ -175,7 +175,6 @@ public class Drone extends Model implements Runnable{
 					setProgress(0);
 					boolean loopCompleted = true;
 					for (int t = 0; t < timeToTravel.doubleValue(); t++) {
-						System.out.println("loop");
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {

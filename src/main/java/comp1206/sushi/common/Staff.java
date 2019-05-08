@@ -80,16 +80,26 @@ public class Staff extends Model implements Runnable {
 				int timeToMake = random.nextInt(40) + 20;
 //				this.server.stock.dishesBeingMade.add(dishToMake);
 				setStatus("Making dish " + dishToMake.getName());
+				boolean loopCompleted = true;
 				this.server.stock.beginRestock(dishToMake);
 				try {
-					Thread.sleep(timeToMake * 1000);
+					for (int x = 0; x < timeToMake; x++){
+						Thread.sleep(1000);
+						if (!this.server.getDishes().contains(dishToMake)){
+							loopCompleted = false;
+							break;
+						}
+					}
 				} catch (InterruptedException e){
 					e.printStackTrace();
 				}
+
 				setStatus("Idle");
 				setBeingMadeDish(null);
 				this.server.stock.dishesBeingMade.remove(dishToMake);
-				this.server.stock.restockDish(dishToMake);
+				if (loopCompleted){
+					this.server.stock.restockDish(dishToMake);
+				}
 
 			}
 

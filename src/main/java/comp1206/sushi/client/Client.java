@@ -37,6 +37,9 @@ public class Client implements ClientInterface {
 	}
 
 	public void resetServerSignal(){
+		for (Dish d : this.dishes){
+			this.removeDish(d);
+		}
 		dishes = new ArrayList<Dish>();
 //		orders = new ArrayList<Order>();
 		users = new ArrayList<User>();
@@ -102,7 +105,7 @@ public class Client implements ClientInterface {
 
 
 		}
-		return new User();
+		return null;
 	}
 
 	@Override
