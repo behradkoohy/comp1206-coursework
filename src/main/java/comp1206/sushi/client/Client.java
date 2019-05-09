@@ -1,15 +1,13 @@
 package comp1206.sushi.client;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import comp1206.sushi.common.*;
 //TODO: fix multiple dish issue
 
 
 import comp1206.sushi.comms.*;
+import comp1206.sushi.server.ServerInterface;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -194,6 +192,7 @@ public class Client implements ClientInterface {
 
 	@Override
 	public List<Order> getOrders(User user) {
+		this.clientComms.sendMessage(new RequestOrders(this.currentlyLoggedInUser.getName()));
 		List<Order> userOrders = new ArrayList<>();
 		for (Order o : orders){
 			if (o.getName().equals(user.getName())){
@@ -226,6 +225,9 @@ public class Client implements ClientInterface {
 
 	@Override
 	public void cancelOrder(Order order) {
+		if (order.getStatus().equals("Delivered") || order.getStatus().equals("Out for Delivery")){
+//			throw new ServerInterface.UnableToDeleteException("Order has been delivered or is already out for delivery");
+		}
 		clientComms.sendMessage(new CancelOrder(order));
 		order.setStatus("Cancelled");
 
@@ -282,4 +284,18 @@ public class Client implements ClientInterface {
 	}
 
 
+	public void deliverObject(OrderedDelivered orderedDelivered) {
+		System.out.println(orderedDelivered.getOrder());
+		for (Order o: this.orders){
+			System.out.println(orderedDelivered.getOrder().getUser().getName().equals(currentlyLoggedInUser.getName()));
+			System.out.println(o.getOrderDetails().equals(orderedDelivered.getOrder().getOrderDetails()));
+			if (orderedDelivered.getOrder().getKey() == o.getKey()){
+				o.setStatus("Delivered");
+			}
+		}
+	}
+
+	public boolean compareOrders(HashMap o1, HashMap o2){
+		return true;
+	}
 }

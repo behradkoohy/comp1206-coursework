@@ -1,5 +1,6 @@
 package comp1206.sushi.common;
 
+import comp1206.sushi.comms.OrderedDelivered;
 import comp1206.sushi.server.Server;
 
 public class Drone extends Model implements Runnable{
@@ -127,56 +128,22 @@ public class Drone extends Model implements Runnable{
 		System.out.println("Running thread for drone with speed " + getSpeed());
 		running = true;
 		while (running && !server.resetting){
-			Ingredient ingredientToGet = this.server.stock.getIngredientToGet();
-			if (ingredientToGet != null){
-				Number distanceToTravel = ingredientToGet.getSupplier().getDistance().doubleValue() * 1000;
-				Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
-				setIngredientBeingDelivered(ingredientToGet);
-				setDestination(ingredientToGet.getSupplier().getPostcode());
-				boolean loopCompleted = true;
-				for (int t = 0; t < timeToTravel.doubleValue(); t++) {
-					try {
-						Thread.sleep(1000);
-						if (!this.server.getIngredients().contains(ingredientToGet)){
-							loopCompleted = false;
-							break;
-						}
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					double distanceGone = getSpeed().doubleValue() * t;
-					setProgress((distanceGone * 100) / distanceToTravel.doubleValue());
-				}
-				setProgress(0);
-				setIngredientBeingDelivered(null);
-				setDestination(null);
-				if (loopCompleted) {
-					synchronized (this.server.stock.ingredientsBeingMade) {
-						this.server.stock.ingredientsBeingMade.remove(ingredientToGet);
-						this.server.stock.restockIngredient(ingredientToGet);
-					}
-				}
-				ingredientToGet = null;
-			} else {
-				Order orderToDeliver = null;
-				synchronized (this.server.stock.orderQueue){
-					orderToDeliver = this.server.stock.getOrderToDeliver();
-//					System.out.println(this.server.stock.orderQueue.size());
-
-				}
-				if (orderToDeliver != null){
-
-					Postcode destination = orderToDeliver.getUser().getPostcode();
-					Number distanceToTravel = destination.getDistance().doubleValue() * 1000;
+			if (this.server.restockingIngredients){
+				Ingredient ingredientToGet = this.server.stock.getIngredientToGet();
+				if (ingredientToGet != null){
+					Number distanceToTravel = ingredientToGet.getSupplier().getDistance().doubleValue() * 1000;
 					Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
-
-					setOrderBeingDelivered(orderToDeliver);
-					setDestination(destination);
-					setProgress(0);
+					setIngredientBeingDelivered(ingredientToGet);
+					setDestination(ingredientToGet.getSupplier().getPostcode());
+					setStatus("Getting " + ingredientToGet);
 					boolean loopCompleted = true;
 					for (int t = 0; t < timeToTravel.doubleValue(); t++) {
 						try {
 							Thread.sleep(1000);
+							if (!this.server.getIngredients().contains(ingredientToGet)){
+								loopCompleted = false;
+								break;
+							}
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
@@ -184,117 +151,62 @@ public class Drone extends Model implements Runnable{
 						setProgress((distanceGone * 100) / distanceToTravel.doubleValue());
 					}
 					setProgress(0);
-					setOrderBeingDelivered(null);
+					setIngredientBeingDelivered(null);
 					setDestination(null);
+					setStatus(null);
 					if (loopCompleted) {
-						synchronized (orderToDeliver) {
-							orderToDeliver.setOrderComplete(true);
-							orderToDeliver.setStatus("Delivered");
+						synchronized (this.server.stock.ingredientsBeingMade) {
+							this.server.stock.ingredientsBeingMade.remove(ingredientToGet);
+							this.server.stock.restockIngredient(ingredientToGet);
 						}
-					} else {
-						synchronized (orderToDeliver){
-							orderToDeliver.setOrderComplete(false);
-							orderToDeliver.setStatus("In Progress");
+					}
+					ingredientToGet = null;
+				} else {
+					Order orderToDeliver = null;
+					synchronized (this.server.stock.orderQueue){
+						orderToDeliver = this.server.stock.getOrderToDeliver();
+//					System.out.println(this.server.stock.orderQueue.size());
+
+					}
+					if (orderToDeliver != null){
+
+						Postcode destination = orderToDeliver.getUser().getPostcode();
+						Number distanceToTravel = destination.getDistance().doubleValue() * 1000;
+						Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
+						setStatus("Delivering order to " + orderToDeliver.getUser());
+						setOrderBeingDelivered(orderToDeliver);
+						setDestination(destination);
+						setProgress(0);
+						boolean loopCompleted = true;
+						for (int t = 0; t < timeToTravel.doubleValue(); t++) {
+							try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+							double distanceGone = getSpeed().doubleValue() * t;
+							setProgress((distanceGone * 100) / distanceToTravel.doubleValue());
+							this.server.notifyUpdate();
 						}
+						if (loopCompleted) {
+							synchronized (orderToDeliver) {
+								orderToDeliver.setOrderComplete(true);
+								orderToDeliver.setStatus("Delivered");
+								this.server.sendMessage(new OrderedDelivered(this.orderBeingDelivered));
+							}
+						} else {
+							synchronized (orderToDeliver){
+								orderToDeliver.setOrderComplete(false);
+								orderToDeliver.setStatus("In Progress");
+							}
+						}
+						setProgress(null);
+						setOrderBeingDelivered(null);
+						setDestination(null);
+						setStatus(null);
 					}
 				}
 			}
-			if (ingredientToGet != null){
-				System.out.println("CHECKING FOR ORDERS");
-			}
-
-
 		}
-
-
-
-
-
-
 	}
-//		System.out.println(server.resetting);
-//		while (running && !server.resetting){
-//
-//			Ingredient ingredientToGet = null;
-//			synchronized (this.server.ingredientStockDaemon){
-//				try {
-//					ingredientToGet = this.server.ingredientStockDaemon.getTopOfQueue();
-//				} catch (Exception e){
-//					ingredientToGet = null;
-//					ingredientBeingDelivered = null;
-//				}
-//			}
-//			if (ingredientToGet != null){
-//				int numberToBe;
-//				try {
-//					numberToBe = this.server.getIngredientStockLevels().get(ingredientToGet).intValue();
-//				} catch (NullPointerException e){
-//					continue;
-//				}
-//				synchronized (this.server.drones){
-//					for (Drone d : this.server.getDrones()){
-//						if (d.getIngredientBeingDelivered() != null && d.getIngredientBeingDelivered().equals(ingredientToGet)) {
-//							numberToBe += ingredientToGet.getRestockAmount().intValue();
-//						}
-//					}
-//				}
-//				if (numberToBe < ingredientToGet.getRestockThreshold().intValue()){
-//					ingredientBeingDelivered = ingredientToGet;
-////					System.out.println(ingredientToGet.getName() + " being made");
-//					try{
-//						if (this.server.getIngredients().contains(ingredientBeingDelivered)){
-//							Number distanceToTravel = ingredientToGet.getSupplier().getDistance().doubleValue() * 1000;
-//							Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
-//							boolean loopCompleted = true;
-//							for (int t = 0; t < timeToTravel.doubleValue(); t++) {
-//								Thread.sleep(1000);
-//								double distanceGone = getSpeed().doubleValue() * t;
-//
-//								setProgress((distanceGone * 100) / distanceToTravel.doubleValue());
-//								if (!this.server.getIngredients().contains(ingredientBeingDelivered)){
-//									loopCompleted = false;
-//									break;
-//								}
-//								if (this.server.getIngredientStockLevels().get(ingredientBeingDelivered).intValue() >= ingredientBeingDelivered.getRestockThreshold().intValue()){
-//									loopCompleted = false;
-//									break;
-//								}
-//							}
-//							if (loopCompleted){
-//								server.deliverIngredients(ingredientToGet);
-//							}
-//						}
-//					} catch (Exception e){
-//						e.printStackTrace();
-//					}
-//					setIngredientBeingDelivered(null);
-//					setDestination(null);
-//					setProgress(0);
-//				} else {
-//					synchronized (this.server.ingredientStockDaemon.ingredientRestockQueue){
-//						this.server.ingredientStockDaemon.ingredientRestockQueue.remove(ingredientToGet);
-//					}
-//				}
-//			}
-//		}
-//		if (this.server.ingredientStockDaemon.getQueueSize() == 0 && this.server.deliveryQueue.peekDeliverable() != null && this.getIngredientBeingDelivered() == null && this.getOrderBeingDelivered() == null){
-//			Order toDeliver = this.server.deliveryQueue.getDeliverable();
-//			try{
-//				Number distanceToTravel = toDeliver.getUser().getPostcode().getDistance().doubleValue() * 1000;
-//				Number timeToTravel = distanceToTravel.doubleValue() / getSpeed().doubleValue();
-//				for (int t = 0; t < timeToTravel.doubleValue(); t++){
-//					Thread.sleep(1000);
-//					double distanceGone = getSpeed().doubleValue() * t;
-//					setProgress((distanceGone*100)/distanceToTravel.doubleValue());
-//				}
-//
-//				server.deliverOrder(toDeliver);
-//			} catch (Exception e){
-//				e.printStackTrace();
-//			}
-//			setIngredientBeingDelivered(null);
-//			setDestination(null);
-//			setProgress(0);
-//		}
-
 }

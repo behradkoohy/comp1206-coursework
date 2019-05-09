@@ -16,7 +16,7 @@ public class ServerCommunications {
     Server kryonetServer;
     comp1206.sushi.server.Server server;
     public ServerCommunications(comp1206.sushi.server.Server server){
-        kryonetServer = new Server();
+        kryonetServer = new Server(16384,16384);
         kryonetServer.start();
 
         Kryo kryo = kryonetServer.getKryo();
@@ -35,6 +35,8 @@ public class ServerCommunications {
         kryo.register(CancelOrder.class);
         kryo.register(RemoveDish.class);
         kryo.register(ResetServer.class);
+        kryo.register(OrderedDelivered.class);
+        kryo.register(RequestOrders.class);
 
         try {
             kryonetServer.bind(54555,54777);
@@ -57,6 +59,14 @@ public class ServerCommunications {
                     server.addOrder(newOrder);
                 } else if (object instanceof CancelOrder){
                     server.cancelOrder((CancelOrder) object);
+                } else if (object instanceof RequestOrders){
+                    ArrayList<Order> userOrders = new ArrayList<>();
+                    for (Order o : server.getOrders()){
+                        if (o.getUser().getName().equals(((RequestOrders) object).getUserName())){
+                            userOrders.add(o);
+                        }
+                    }
+                    connection.sendTCP(userOrders);
                 }
             }
         });
@@ -78,6 +88,12 @@ public class ServerCommunications {
     public void sendMessageToAdd(ResetServer resetServer){
         if (kryonetServer.getConnections() != null && resetServer != null){
             kryonetServer.sendToAllTCP(resetServer);
+        }
+    }
+
+    public void sendMessageToAll(OrderedDelivered orderedDelivered){
+        if (kryonetServer.getConnections() != null && orderedDelivered != null){
+            kryonetServer.sendToAllTCP(orderedDelivered);
         }
     }
 

@@ -9,8 +9,9 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class Persistance implements Runnable {
+public class DataPersistance implements Runnable {
     Server server;
 
     public List<Dish> dishes = new ArrayList<Dish>();
@@ -28,7 +29,7 @@ public class Persistance implements Runnable {
     public volatile boolean running = false;
     public volatile boolean paused = false;
 
-    public Persistance(Server server) {
+    public DataPersistance(Server server) {
         this.paused = true;
         this.server = server;
         if (persistance.exists()){
@@ -53,7 +54,7 @@ public class Persistance implements Runnable {
                         this.server.addStaff(d.getName(), d.getStatus(), d.getFatigue());
                     }
                     SafeSendStock sentStock = (SafeSendStock) persistantData.get(8);
-                    this.server.stock = new Stock(this.server, sentStock.dishStock, sentStock.ingredientStock, sentStock.orderQueue);
+                    this.server.stock = new Stock(this.server, sentStock.dishStock, sentStock.ingredientStock, new ConcurrentLinkedQueue<>());
 
                 }
 

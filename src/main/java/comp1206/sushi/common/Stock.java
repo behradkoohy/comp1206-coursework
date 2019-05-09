@@ -2,6 +2,7 @@ package comp1206.sushi.common;
 
 import comp1206.sushi.server.Server;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -10,8 +11,8 @@ public class Stock {
 
     Server server;
 
-    Map<Dish, Number> dishStock = new ConcurrentHashMap<>();
-    Map<Ingredient, Number> ingredientStock = new ConcurrentHashMap<>();
+    public Map<Dish, Number> dishStock = new ConcurrentHashMap<>();
+    public Map<Ingredient, Number> ingredientStock = new ConcurrentHashMap<>();
 
     ConcurrentLinkedQueue<Order> orderQueue;
 
@@ -85,9 +86,16 @@ public class Stock {
 
     public synchronized Ingredient getIngredientToGet(){
         for (Ingredient i : ingredientStock.keySet()){
-            if (i.getRestockThreshold().intValue() > (ingredientStock.get(i).intValue() + (Collections.frequency(ingredientsBeingMade, i) * i.getRestockAmount().intValue()))){
+            try{
+            if (i.getRestockThreshold().intValue() >
+                    (ingredientStock.get(i).intValue() +
+                    (Collections.frequency(ingredientsBeingMade, i) *
+                            i.getRestockAmount().intValue()))){
                 ingredientsBeingMade.add(i);
                 return i;
+            }}
+            catch (NullPointerException e){
+//                e.printStackTrace();
             }
         }
         return null;
@@ -110,6 +118,15 @@ public class Stock {
         synchronized (this.dishStock){
             this.dishStock.remove(dish);
         }
+    }
+
+    public void updateIngredient(Ingredient oldIngr, Ingredient newIngr){
+        System.out.println(newIngr);
+        System.out.println(ingredientStock.get(newIngr));
+        System.out.println(oldIngr);
+        System.out.println(ingredientStock.get(oldIngr));
+        ingredientStock.put(newIngr, ingredientStock.remove(oldIngr));
+        server.notifyUpdate();
     }
 
     public synchronized Dish getDishToGet(){
@@ -200,5 +217,10 @@ public class Stock {
 
     public void setIngredientsBeingMade(List<Ingredient> ingredientsBeingMade) {
         this.ingredientsBeingMade = ingredientsBeingMade;
+    }
+
+    public boolean checkStock(Dish dishToMake) {
+        int dishCount = ((Collections.frequency(this.dishesBeingMade, dishToMake) -1) * dishToMake.getRestockAmount().intValue()) + this.dishStock.get(dishToMake).intValue();
+        return dishCount > dishToMake.getRestockThreshold().intValue();
     }
 }

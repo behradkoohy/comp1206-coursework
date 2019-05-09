@@ -7,19 +7,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import comp1206.sushi.Configuration;
 import comp1206.sushi.common.*;
 
 
-import comp1206.sushi.comms.CancelOrder;
-import comp1206.sushi.comms.RemoveDish;
-import comp1206.sushi.comms.ResetServer;
-import comp1206.sushi.comms.ServerCommunications;
-import comp1206.sushi.exceptions.NegativeStockException;
-import comp1206.sushi.persistance.Persistance;
+import comp1206.sushi.comms.*;
+import comp1206.sushi.persistance.DataPersistance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,10 +40,12 @@ public class Server implements ServerInterface, Serializable {
 
 	List<Dish> dishesBeingMade = new ArrayList<>();
 	public volatile boolean resetting = false;
+	public volatile boolean restockingDishes = true;
+	public volatile boolean restockingIngredients = true;
 
 	ServerCommunications serverComms;
 
-	Persistance serverPersistance;
+	DataPersistance serverDataPersistance;
 	Thread persistanceDaemon;
 
 	public Stock stock = new Stock(this);
@@ -65,6 +62,7 @@ public class Server implements ServerInterface, Serializable {
 
 
 		serverComms = new ServerCommunications(this);
+
 
 
 
@@ -97,8 +95,8 @@ public class Server implements ServerInterface, Serializable {
 //		addDrone(10);
 //		addDrone(10);
 
-		serverPersistance = new Persistance(this);
-		persistanceDaemon = new Thread(serverPersistance);
+		serverDataPersistance = new DataPersistance(this);
+		persistanceDaemon = new Thread(serverDataPersistance);
 		persistanceDaemon.start();
 
 
@@ -137,6 +135,10 @@ public class Server implements ServerInterface, Serializable {
 		resetting = false;
 	}
 
+	public void sendMessage(OrderedDelivered orderedDelivered){
+		this.serverComms.sendMessageToAll(orderedDelivered);
+	}
+
 	public synchronized Map<Ingredient, Number> getDishIngredientStock(Dish dish){
 		Map<Ingredient, Number> ingredientsForDish = new HashMap<>();
 		for (Ingredient i : dish.getRecipe().keySet()){
@@ -147,7 +149,7 @@ public class Server implements ServerInterface, Serializable {
 
 	public void cancelOrder(CancelOrder cancelOrder){
 		for (Order o : this.getOrders()){
-			if (o.getName().equals(cancelOrder.getOrder().getName())){
+			if (o.getKey() == cancelOrder.order.getKey()){
 				o.setStatus("Cancelled");
 			}
 		}
@@ -212,12 +214,12 @@ public class Server implements ServerInterface, Serializable {
 	
 	@Override
 	public void setRestockingIngredientsEnabled(boolean enabled) {
-		/// TODO Implement
+		restockingIngredients = enabled;
 	}
 
 	@Override
 	public void setRestockingDishesEnabled(boolean enabled) {
-		/// TODO Implement
+		restockingDishes = enabled;
 	}
 	
 	@Override
@@ -313,10 +315,20 @@ public class Server implements ServerInterface, Serializable {
 
 
 	@Override
-	public void removeDrone(Drone drone) {
-		int index = this.drones.indexOf(drone);
-		this.drones.remove(index);
-		this.notifyUpdate();
+	public void removeDrone(Drone drone) throws UnableToDeleteException {
+		String status;
+		synchronized (drone){
+			status = drone.getStatus();
+		}
+		System.out.println("status = " + status);
+		if (status == null){
+			System.out.println(status);
+			int index = this.drones.indexOf(drone);
+			this.drones.remove(index);
+			this.notifyUpdate();
+		} else {
+			throw new UnableToDeleteException("Drone is doing something. please wait until it has finished to delete.");
+		}
 	}
 
 	@Override
@@ -359,8 +371,16 @@ public class Server implements ServerInterface, Serializable {
 
 	@Override
 	public void removeStaff(Staff staff) {
-		this.staff.remove(staff);
-		this.notifyUpdate();
+		String status;
+		synchronized (staff.getStatus()){
+			status = staff.getStatus();
+		}
+		if (status.equals("Idle")){
+			this.staff.remove(staff);
+			this.notifyUpdate();
+		} else {
+			throw new UnableToDeleteException("Staff are doing something. Please wait before deleting");
+		}
 	}
 
 	@Override
@@ -514,6 +534,7 @@ public class Server implements ServerInterface, Serializable {
 	public void setRestockLevels(Ingredient ingredient, Number restockThreshold, Number restockAmount) {
 		ingredient.setRestockThreshold(restockThreshold);
 		ingredient.setRestockAmount(restockAmount);
+//		this.stock.ingredientStock.put(ingredient, stock.ingredientStock.remove(ingredient));
 		this.notifyUpdate();
 	}
 

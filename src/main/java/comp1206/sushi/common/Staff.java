@@ -73,40 +73,44 @@ public class Staff extends Model implements Runnable {
 		System.out.println("Running daemon thread " + name);
 		running = true;
 		while (running && !this.server.resetting){
-			Dish dishToMake = this.server.stock.getDishToGet();
-			if (dishToMake != null){
-				setBeingMadeDish(dishToMake);
-				Random random = new Random();
-				int timeToMake = random.nextInt(40) + 20;
+			if (this.server.restockingDishes){
+				Dish dishToMake = this.server.stock.getDishToGet();
+				if (dishToMake != null){
+					setBeingMadeDish(dishToMake);
+					Random random = new Random();
+					int timeToMake = random.nextInt(40) + 20;
 //				this.server.stock.dishesBeingMade.add(dishToMake);
-				setStatus("Making dish " + dishToMake.getName());
-				boolean loopCompleted = true;
-				this.server.stock.beginRestock(dishToMake);
-				try {
-					for (int x = 0; x < timeToMake; x++){
-						Thread.sleep(1000);
-						if (!this.server.getDishes().contains(dishToMake)){
-							loopCompleted = false;
-							break;
+					setStatus("Making dish " + dishToMake.getName());
+					boolean loopCompleted = true;
+					this.server.stock.beginRestock(dishToMake);
+					try {
+						for (int x = 0; x < timeToMake; x++) {
+							Thread.sleep(1000);
+							if (!this.server.getDishes().contains(dishToMake)) {
+								loopCompleted = false;
+								break;
+							}
+							try {
+								if (this.server.stock.checkStock(dishToMake)) {
+									loopCompleted = false;
+									break;
+								}
+							} catch (NullPointerException e){
+								System.out.println("NPE error in staff");
+							}
 						}
+					} catch (InterruptedException e){
+						e.printStackTrace();
 					}
-				} catch (InterruptedException e){
-					e.printStackTrace();
-				}
 
-				setStatus("Idle");
-				setBeingMadeDish(null);
-				this.server.stock.dishesBeingMade.remove(dishToMake);
-				if (loopCompleted){
-					this.server.stock.restockDish(dishToMake);
+					setStatus("Idle");
+					setBeingMadeDish(null);
+					this.server.stock.dishesBeingMade.remove(dishToMake);
+					if (loopCompleted){
+						this.server.stock.restockDish(dishToMake);
+					}
 				}
-
 			}
-
-
 		}
-
 	}
-
-
 }

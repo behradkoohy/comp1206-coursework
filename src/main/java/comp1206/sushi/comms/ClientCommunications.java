@@ -15,7 +15,7 @@ public class ClientCommunications {
     comp1206.sushi.client.Client client;
     public ClientCommunications(comp1206.sushi.client.Client client){
         this.client = client;
-        kryonetClient = new Client();
+        kryonetClient = new Client(16384,16384);
         kryonetClient.start();
 
         Kryo kryo = kryonetClient.getKryo();
@@ -34,6 +34,8 @@ public class ClientCommunications {
         kryo.register(CancelOrder.class);
         kryo.register(RemoveDish.class);
         kryo.register(ResetServer.class);
+        kryo.register(OrderedDelivered.class);
+        kryo.register(RequestOrders.class);
 
         try {
             kryonetClient.connect(5000, "127.0.0.1", 54555, 54777);
@@ -51,6 +53,8 @@ public class ClientCommunications {
                             client.postcodes = recievedList;
                         } else if (recievedList.get(0) instanceof Dish){
                             client.dishes = recievedList;
+                        } else if (recievedList.get(0) instanceof Order){
+                            client.orders = recievedList;
                         }
                     }
                 }
@@ -62,6 +66,10 @@ public class ClientCommunications {
                 }
                 if (object instanceof ResetServer){
                     client.resetServerSignal();
+                }
+                if (object instanceof OrderedDelivered){
+                    client.deliverObject((OrderedDelivered) object);
+                    System.out.println("Order completed");
                 }
             }
         });
